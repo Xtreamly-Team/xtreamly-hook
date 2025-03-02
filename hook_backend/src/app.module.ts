@@ -11,6 +11,9 @@ import { GmxHedgooorModule } from './modules/gmx-hedgooor/gmx-hedgooor.module';
 import { SharedModule } from './modules/shared/shared.module';
 import { XtreamlyApiModule } from './modules/external-data/xtreamly-api/xtreamly-api.module';
 import { CoinGeckoModule } from './modules/external-data/coin-gecko/coin-gecko.module';
+import { DatabaseModule } from './modules/database/database.module';
+import { UserModule } from './modules/user/user.module';
+
 
 @Module({
   imports: [
@@ -24,6 +27,8 @@ import { CoinGeckoModule } from './modules/external-data/coin-gecko/coin-gecko.m
     SharedModule,
     XtreamlyApiModule,
     CoinGeckoModule,
+    DatabaseModule,
+    UserModule,
   ],
   controllers: [AppController, UserController, PositionController],
   providers: [AppService],
