@@ -13,6 +13,8 @@ import { XtreamlyApiModule } from './modules/external-data/xtreamly-api/xtreamly
 import { CoinGeckoModule } from './modules/external-data/coin-gecko/coin-gecko.module';
 import { DatabaseModule } from './modules/database/database.module';
 import { UserModule } from './modules/user/user.module';
+import { PositionModule } from './modules/position/position.module';
+
 
 
 @Module({
@@ -29,6 +31,7 @@ import { UserModule } from './modules/user/user.module';
     CoinGeckoModule,
     DatabaseModule,
     UserModule,
+    PositionModule,
   ],
   controllers: [AppController, UserController, PositionController],
   providers: [AppService],
