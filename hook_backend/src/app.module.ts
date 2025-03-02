@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
+import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserController } from './controllers/user/user.controller';
@@ -17,6 +20,10 @@ import { PositionModule } from './modules/position/position.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
     DevtoolsModule.register({
       http: process.env.NODE_ENV !== 'production',
     }),
