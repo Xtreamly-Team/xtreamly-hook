@@ -9,6 +9,8 @@ import { UpdateUserPositionModule } from './modules/update-user-position/update-
 import { XtrV4UniHookModule } from './modules/xtr_v4_uni_hook/xtr_v4_uni_hook.module';
 import { GmxHedgooorModule } from './modules/gmx-hedgooor/gmx-hedgooor.module';
 import { SharedModule } from './modules/shared/shared.module';
+import { XtreamlyApiModule } from './modules/external-data/xtreamly-api/xtreamly-api.module';
+import { CoinGeckoModule } from './modules/external-data/coin-gecko/coin-gecko.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { SharedModule } from './modules/shared/shared.module';
     XtrV4UniHookModule,
     GmxHedgooorModule,
     SharedModule,
+    XtreamlyApiModule,
+    CoinGeckoModule,
   ],
   controllers: [AppController, UserController, PositionController],
   providers: [AppService],
