@@ -1,7 +1,11 @@
-import { PositionDto } from './position.dto';
+import { OpenPositionQuoteDto, PositionResponseDto, PositionHistoryDto, UpdatePositionStatusDto, RecordPositionHistoryDto } from './position.dto';
 
-describe('PositionDto', () => {
+describe('Position', () => {
   it('should be defined', () => {
-    expect(new PositionDto()).toBeDefined();
+    expect(new OpenPositionQuoteDto()).toBeDefined();
+    expect(new PositionResponseDto()).toBeDefined();
+    expect(new PositionHistoryDto()).toBeDefined();
+    expect(new UpdatePositionStatusDto()).toBeDefined();
+    expect(new RecordPositionHistoryDto()).toBeDefined();
   });
 });
