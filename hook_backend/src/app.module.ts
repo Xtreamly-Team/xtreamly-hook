@@ -3,7 +3,6 @@ import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 
-import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserController } from './controllers/user/user.controller';
 import { PositionController } from './controllers/position/position.controller';
@@ -38,7 +37,7 @@ import { PositionModule } from './modules/position/position.module';
     UserModule,
     PositionModule,
   ],
-  controllers: [AppController, UserController, PositionController],
+  controllers: [UserController, PositionController],
   providers: [AppService],
 })
 export class AppModule {}
