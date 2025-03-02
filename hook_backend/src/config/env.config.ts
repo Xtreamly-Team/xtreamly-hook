@@ -1,4 +1,4 @@
-import { cleanEnv, str, port } from 'envalid';
+import { cleanEnv, str, port, bool } from 'envalid';
 import { config } from 'dotenv';
 
 // Load .env file first
@@ -19,7 +19,7 @@ export const env = cleanEnv(process.env, {
   // Database
   DB_HOST: str({ 
     desc: 'PostgreSQL host',
-    example: 'localhost'
+    default: 'localhost'
   }),
   DB_PORT: port({ 
     default: 5432, 
@@ -27,15 +27,13 @@ export const env = cleanEnv(process.env, {
   }),
   DB_USERNAME: str({ 
     desc: 'PostgreSQL username',
-    example: 'postgres'
+    default: 'postgres'
   }),
   DB_PASSWORD: str({ 
-    desc: 'PostgreSQL password',
-    example: 'your_password'
+    desc: 'PostgreSQL password'
   }),
   DB_NAME: str({ 
-    desc: 'PostgreSQL database name',
-    example: 'your_database'
+    desc: 'PostgreSQL database name'
   }),
 }, {
   reporter: ({ errors }) => {
