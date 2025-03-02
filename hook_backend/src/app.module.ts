@@ -15,8 +15,6 @@ import { DatabaseModule } from './modules/database/database.module';
 import { UserModule } from './modules/user/user.module';
 import { PositionModule } from './modules/position/position.module';
 
-
-
 @Module({
   imports: [
     DevtoolsModule.register({
