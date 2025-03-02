@@ -16,6 +16,15 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@app/*": ["src/*"],
+      "@modules/*": ["src/modules/*"],
+      "@config/*": ["src/config/*"],
+      "@entities/*": ["src/modules/*/entities"],
+      "@dtos/*": ["src/modules/*/dto"],
+      "@services/*": ["src/modules/*/services"],
+      "@repositories/*": ["src/modules/*/repositories"]
+    }
   }
 }
