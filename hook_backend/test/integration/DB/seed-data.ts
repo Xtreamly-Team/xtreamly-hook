@@ -122,11 +122,22 @@ async function seedDatabase() {
     // Create position history entries
     console.log('Creating position history entries...');
     
+    // First, let's check the actual column names in the position_history table
+    const columns = await dataSource.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'position_history'
+      ORDER BY ordinal_position
+    `);
+    
+    console.log('Position history columns:', columns.map((c: any) => c.column_name).join(', '));
+    
     // Create entries for the past 30 days
     const now = new Date();
     const startDate = new Date(now);
     startDate.setDate(now.getDate() - 30);
     
+    // Let's use the repository to create entries instead of direct SQL
     for (const position of createdPositions) {
       // Skip pending positions
       if (position.status !== PositionStatus.ACTIVE) continue;
@@ -139,17 +150,17 @@ async function seedDatabase() {
         // Simulate some price movement
         const priceMultiplier = 1 + (Math.sin(i / 5) * 0.1); // +/- 10% sinusoidal movement
         
-        const entry = dataSource.getRepository(PositionHistory).create({
-          positionId: position.id,
-          tokenAValue: Number(position.amountA) * priceMultiplier,
-          tokenBValue: Number(position.amountB),
-          hedgeValue: Number(position.hedgeAmount || 0) * priceMultiplier,
-          netValue: (Number(position.amountA) * priceMultiplier) + Number(position.amountB),
-          timestamp: date,
-          metadata: { day: i, source: 'test-data' }
-        });
+        // Create history entry using repository
+        const historyEntry = new PositionHistory();
+        historyEntry.positionId = position.id;
+        historyEntry.tokenAValue = Number(position.amountA) * priceMultiplier;
+        historyEntry.tokenBValue = Number(position.amountB);
+        historyEntry.hedgeValue = Number(position.hedgeAmount || 0) * priceMultiplier;
+        historyEntry.netValue = (Number(position.amountA) * priceMultiplier) + Number(position.amountB);
+        historyEntry.timestamp = date;
+        historyEntry.metadata = { day: i, source: 'test-data' };
         
-        await dataSource.getRepository(PositionHistory).save(entry);
+        await dataSource.getRepository(PositionHistory).save(historyEntry);
       }
       
       console.log(`Created 31 history entries for position: ${position.id}`);
