@@ -38,7 +38,10 @@
     "db:reset": "npm run db:clean && npm run migration:run",
     "db:seed": "ts-node -r tsconfig-paths/register test/integration/DB/seed-data.ts",
     "db:query": "ts-node -r tsconfig-paths/register test/integration/DB/query-data.ts",
-    "db:check-columns": "ts-node -r tsconfig-paths/register test/integration/DB/check-columns.ts"
+    "db:check-columns": "ts-node -r tsconfig-paths/register test/integration/DB/check-columns.ts",
+    "db:create-token-prices": "ts-node -r tsconfig-paths/register scripts/run-token-prices-migration.ts",
+    "db:refresh-token-prices-view": "ts-node -r tsconfig-paths/register scripts/refresh-token-prices-view.ts",
+    "db:seed-token-prices": "ts-node -r tsconfig-paths/register scripts/seed-token-prices.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
