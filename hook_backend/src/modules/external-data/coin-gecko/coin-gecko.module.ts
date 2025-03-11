@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
-import { CoinGeckoService } from './coin-gecko/coin-gecko.service';
+import { ConfigModule } from '@nestjs/config';
+import { CoinGeckoService } from './coin-gecko.service';
 
 @Module({
-  providers: [CoinGeckoService]
+  imports: [ConfigModule],
+  providers: [CoinGeckoService],
+  exports: [CoinGeckoService]
 })
 export class CoinGeckoModule {}
