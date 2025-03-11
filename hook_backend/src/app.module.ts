@@ -16,6 +16,7 @@ import { CoinGeckoModule } from './modules/external-data/coin-gecko/coin-gecko.m
 import { DatabaseModule } from './modules/database/database.module';
 import { UserModule } from './modules/user/user.module';
 import { PositionModule } from './modules/position/position.module';
+import { PriceModule } from './modules/price/price.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { PositionModule } from './modules/position/position.module';
     DevtoolsModule.register({
       http: process.env.NODE_ENV !== 'production',
     }),
+    ScheduleModule.forRoot(),
     QuoteComputeModule,
     UpdateUserPositionModule,
     XtrV4UniHookModule,
@@ -36,6 +38,7 @@ import { PositionModule } from './modules/position/position.module';
     DatabaseModule,
     UserModule,
     PositionModule,
+    PriceModule,
   ],
   controllers: [UserController, PositionController],
   providers: [AppService],
