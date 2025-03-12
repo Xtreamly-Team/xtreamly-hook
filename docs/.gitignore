@@ -1,0 +1,12 @@
+pythonScripts/venv/
+main.aux
+
+main.log
+
+main.pdf
+
+main.synctex.gz
+
+*.png
+
+*.pyc
