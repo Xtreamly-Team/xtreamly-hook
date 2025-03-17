@@ -1,4 +1,4 @@
-import { cleanEnv, str, port, bool } from 'envalid';
+import { cleanEnv, str, port, json, bool } from 'envalid';
 import { config } from 'dotenv';
 
 // Load .env file first
@@ -15,7 +15,12 @@ export const env = cleanEnv(process.env, {
     default: 3000,
     desc: 'Port to run the application on'
   }),
-
+  FIREBASE_CREDENTIALS: json({
+    desc: 'The firebase credentials.'
+  }),
+  API_KEY: str({
+    desc: 'The allowed API KEY.'
+  }),
   // Database
   DB_HOST: str({ 
     desc: 'PostgreSQL host',

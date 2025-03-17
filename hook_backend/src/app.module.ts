@@ -17,6 +17,7 @@ import { DatabaseModule } from './modules/database/database.module';
 import { UserModule } from './modules/user/user.module';
 import { PositionModule } from './modules/position/position.module';
 import { PriceModule } from './modules/price/price.module';
+import {AuthModule} from "@modules/auth/auth.module";
 
 @Module({
   imports: [
@@ -36,11 +37,15 @@ import { PriceModule } from './modules/price/price.module';
     XtreamlyApiModule,
     CoinGeckoModule,
     DatabaseModule,
+    AuthModule,
     UserModule,
     PositionModule,
     PriceModule,
   ],
-  controllers: [UserController, PositionController],
+  controllers: [
+    UserController,
+    PositionController
+  ],
   providers: [AppService],
 })
 export class AppModule {}

@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { UserService } from '@modules/user/services/user/user.service';
 import { RegisterUserDto, UserResponseDto } from '@modules/user/dto/user.dto/user.dto';
+import {User} from "@modules/auth/guards/auth.guard";
   
 @Controller('users')
 export class UserController {
@@ -33,5 +34,10 @@ export class UserController {
       isActive: user.isActive,
       createdAt: user.createdAt,
     };
+  }
+
+  @Get('/')
+  async getUser(@User() user: any): Promise<UserResponseDto> {
+    return user;
   }
 }
