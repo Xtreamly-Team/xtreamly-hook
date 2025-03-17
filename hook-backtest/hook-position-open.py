@@ -269,7 +269,7 @@ def _plot_pos_hedge(position_id, i, df_lp_org, df_lp, gmx_collateral, df_perp, d
 # Run
 # =============================================================================
 data_pos_hedge = []
-for i, position_id in enumerate(pool_ids[:]):
+for i, position_id in enumerate(pool_ids[13:16]):
     print(gmx_duration_max, i, position_id)
     pos = df_pos[df_pos['id'] == position_id].iloc[0]
     pos_log = df_log[df_log['position_id'] == position_id]
@@ -325,7 +325,7 @@ for i, position_id in enumerate(pool_ids[:]):
     
     df_p['ret_hedged'] = (df_perp['v']+df_lp['v']+df_lp['f_cum'])/deposited_usd-1
     df_p['ret_org'] = (df_lp_org['v']+df_lp_org['f_cum'])/deposited_usd-1
-    # _plot_pos_hedge(position_id, i, df_lp_org, df_lp, gmx_collateral, df_perp, df_p)
+    _plot_pos_hedge(position_id, i, df_lp_org, df_lp, gmx_collateral, df_perp, df_p)
     
     out = {
         'position_id': position_id,
@@ -355,71 +355,73 @@ for i, position_id in enumerate(pool_ids[:]):
     data_pos_hedge += [out]
     
 # =============================================================================
-# Agr Positions
+# # =============================================================================
+# # Agr Positions
+# # =============================================================================
+# df_pos_hedge = pd.DataFrame(data_pos_hedge)    
+# df_pos_hedge['duration'] = (df_pos_hedge['max_time']-df_pos_hedge['min_time']).dt.total_seconds()/(24*3600)
+# 
+# _style_white()
+# fig, ax = plt.subplots(figsize=(16, 7))
+# df = df_pos_hedge.copy()
+# ax.set_title(f"Histogram of % Improvement on Hedging", pad=30)
+# ax.set_ylabel(f"% Share", labelpad=20)
+# ax.set_xlabel(f"% Improvement", labelpad=20)
+# bin_edges = np.linspace(df['hedge_improve'].min(), df['hedge_improve'].max(), 40)
+# bin_width = np.diff(bin_edges)[0]  # Calculate bin width
+# bar_width = bin_width / 3  # Divide bins equally among the three categories
+# for i, (status, color) in enumerate(zip(
+#     ['lowvol', 'midvol', 'highvol'], 
+#     [tailwind['teal-400'], tailwind['amber-400'], tailwind['pink-400']]
+# )):
+#     counts, _ = np.histogram(df[df['market_status'] == status]['hedge_improve'], bins=bin_edges)
+#     ax.bar(bin_edges[:-1] + i * bar_width, counts/sum(counts), width=bar_width, color=color, alpha=0.9, label=status.capitalize())
+# yticks = ax.get_yticks()
+# ax.vlines(0, 0, max(yticks), color=tailwind['stone-300'])
+# ax.set_yticks(ax.get_yticks())
+# ax.set_xticks(ax.get_xticks())
+# ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+# ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+# ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.1f}%'.format(x*100)))
+# legend = ax.legend(loc='upper left')
+# legend.get_frame().set_alpha(0.9)
+# ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
+# for spine in ax.spines.values(): spine.set_visible(False)
+# fig.tight_layout(rect=[0.004, 0.004, .996, .996])
+# fig.savefig(os.path.join('plots', f'Histogram Improvement.png'), dpi=200)
+# fig.clf()
+# 
+#       
+# df_pos_hedge_agr = df_pos_hedge.groupby(['gmx_duration_max', 
+#                                      'market_status']).agg(
+#         hedged_performance=('hedged_performance', 'mean'),
+#         hedge_improve=('hedge_improve', 'mean'),
+#         position_id=('position_id', 'nunique')
+#         ).reset_index()
+# df_pos_hedge_agr = df_pos_hedge_agr[df_pos_hedge_agr['gmx_duration_max']==12]
+# cols_hedge = {
+#     'market_status': 'Status',
+#     'position_id': '# Positions',
+#     'hedged_performance': '% Performance with Hedge',
+#     'hedge_improve': '% Improvement with Hedge',
+#     }
+# df_pos_hedge_agr = df_pos_hedge_agr[cols_hedge.keys()].rename(columns=cols_hedge)
+# for c in df_pos_hedge_agr.columns:
+#     if '%' in c:
+#         df_pos_hedge_agr[c]*=1
+#         df_pos_hedge_agr[c] = df_pos_hedge_agr[c].apply(lambda x: f"{x:.2%}")
+# 
+# fig, ax = plt.subplots(figsize=(8, 1))  # Adjust figure size
+# ax.axis('tight')
+# ax.axis('off')
+# table = ax.table(cellText=df_pos_hedge_agr.values, 
+#                  colLabels=df_pos_hedge_agr.columns, 
+#                  cellLoc='center', 
+#                  loc='center')
+# ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
+# for spine in ax.spines.values(): spine.set_visible(False)
+# plt.savefig(os.path.join('plots', f'Table Improvement.png'), bbox_inches='tight', dpi=300)
 # =============================================================================
-df_pos_hedge = pd.DataFrame(data_pos_hedge)    
-df_pos_hedge['duration'] = (df_pos_hedge['max_time']-df_pos_hedge['min_time']).dt.total_seconds()/(24*3600)
-
-_style_white()
-fig, ax = plt.subplots(figsize=(16, 7))
-df = df_pos_hedge.copy()
-ax.set_title(f"Histogram of % Improvement on Hedging", pad=30)
-ax.set_ylabel(f"% Share", labelpad=20)
-ax.set_xlabel(f"% Improvement", labelpad=20)
-bin_edges = np.linspace(df['hedge_improve'].min(), df['hedge_improve'].max(), 40)
-bin_width = np.diff(bin_edges)[0]  # Calculate bin width
-bar_width = bin_width / 3  # Divide bins equally among the three categories
-for i, (status, color) in enumerate(zip(
-    ['lowvol', 'midvol', 'highvol'], 
-    [tailwind['teal-400'], tailwind['amber-400'], tailwind['pink-400']]
-)):
-    counts, _ = np.histogram(df[df['market_status'] == status]['hedge_improve'], bins=bin_edges)
-    ax.bar(bin_edges[:-1] + i * bar_width, counts/sum(counts), width=bar_width, color=color, alpha=0.9, label=status.capitalize())
-yticks = ax.get_yticks()
-ax.vlines(0, 0, max(yticks), color=tailwind['stone-300'])
-ax.set_yticks(ax.get_yticks())
-ax.set_xticks(ax.get_xticks())
-ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
-ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
-ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.1f}%'.format(x*100)))
-legend = ax.legend(loc='upper left')
-legend.get_frame().set_alpha(0.9)
-ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
-for spine in ax.spines.values(): spine.set_visible(False)
-fig.tight_layout(rect=[0.004, 0.004, .996, .996])
-fig.savefig(os.path.join('plots', f'Histogram Improvement.png'), dpi=200)
-fig.clf()
-
-      
-df_pos_hedge_agr = df_pos_hedge.groupby(['gmx_duration_max', 
-                                     'market_status']).agg(
-        hedged_performance=('hedged_performance', 'mean'),
-        hedge_improve=('hedge_improve', 'mean'),
-        position_id=('position_id', 'nunique')
-        ).reset_index()
-df_pos_hedge_agr = df_pos_hedge_agr[df_pos_hedge_agr['gmx_duration_max']==12]
-cols_hedge = {
-    'market_status': 'Status',
-    'position_id': '# Positions',
-    'hedged_performance': '% Performance with Hedge',
-    'hedge_improve': '% Improvement with Hedge',
-    }
-df_pos_hedge_agr = df_pos_hedge_agr[cols_hedge.keys()].rename(columns=cols_hedge)
-for c in df_pos_hedge_agr.columns:
-    if '%' in c:
-        df_pos_hedge_agr[c]*=1
-        df_pos_hedge_agr[c] = df_pos_hedge_agr[c].apply(lambda x: f"{x:.2%}")
-
-fig, ax = plt.subplots(figsize=(8, 1))  # Adjust figure size
-ax.axis('tight')
-ax.axis('off')
-table = ax.table(cellText=df_pos_hedge_agr.values, 
-                 colLabels=df_pos_hedge_agr.columns, 
-                 cellLoc='center', 
-                 loc='center')
-ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
-for spine in ax.spines.values(): spine.set_visible(False)
-plt.savefig(os.path.join('plots', f'Table Improvement.png'), bbox_inches='tight', dpi=300)
 
 # position_id = '878458_0x902a7cebc98daa5a0e6de468052c75719c014797'
 # position_id = '879576_0x5b393bd3c1d0d334b8bb9ae106edb4ec33801a3c'
