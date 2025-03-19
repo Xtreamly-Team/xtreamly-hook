@@ -4,7 +4,7 @@ export class InitialSchema1000000000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Enable extensions
     await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp" CASCADE;`);
-    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "timescaledb" CASCADE;`);
+    // await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "timescaledb" CASCADE;`);
 
     // Create users table
     await queryRunner.query(`
@@ -67,30 +67,30 @@ export class InitialSchema1000000000000 implements MigrationInterface {
     `);
 
     // Convert position_history to hypertable
-    await queryRunner.query(`
-      SELECT create_hypertable('position_history', 'timestamp', 
-        chunk_time_interval => interval '1 day',
-        if_not_exists => TRUE
-      );
-    `);
+    // await queryRunner.query(`
+    //   SELECT create_hypertable('position_history', 'timestamp',
+    //     chunk_time_interval => interval '1 day',
+    //     if_not_exists => TRUE
+    //   );
+    // `);
 
     // Add retention policy - keep data for 90 days
-    await queryRunner.query(`
-      SELECT add_retention_policy('position_history', INTERVAL '90 days', if_not_exists => TRUE);
-    `);
+    // await queryRunner.query(`
+    //   SELECT add_retention_policy('position_history', INTERVAL '90 days', if_not_exists => TRUE);
+    // `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Remove retention policy
-    await queryRunner.query(`
-      SELECT remove_retention_policy('position_history', if_not_exists => TRUE);
-    `);
+    // await queryRunner.query(`
+    //   SELECT remove_retention_policy('position_history', if_not_exists => TRUE);
+    // `);
     
     await queryRunner.query(`DROP TABLE IF EXISTS "position_history" CASCADE`);
     await queryRunner.query(`DROP TABLE IF EXISTS "positions" CASCADE`);
     await queryRunner.query(`DROP TABLE IF EXISTS "users" CASCADE`);
     
-    await queryRunner.query(`DROP EXTENSION IF EXISTS "timescaledb" CASCADE;`);
+    // await queryRunner.query(`DROP EXTENSION IF EXISTS "timescaledb" CASCADE;`);
     await queryRunner.query(`DROP EXTENSION IF EXISTS "uuid-ossp" CASCADE;`);
   }
 } 

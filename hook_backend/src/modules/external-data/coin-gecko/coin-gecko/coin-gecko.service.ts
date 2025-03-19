@@ -125,16 +125,16 @@ export class CoinGeckoService {
           include_last_updated_at: true,
         },
       });
-      
-      return symbols.map((symbol, index) => {
+
+      const data = symbols.map((symbol, index) => {
         const tokenId = tokenIds[index];
         const data = response.data[tokenId];
-        
+
         if (!data) {
           this.logger.warn(`No data returned for ${symbol}`);
           return null;
         }
-        
+
         return {
           symbol: symbol.toUpperCase(),
           priceUsd: data.usd,
@@ -143,7 +143,8 @@ export class CoinGeckoService {
           volume24h: data.usd_24h_vol,
           priceChangePercentage24h: data.usd_24h_change,
         };
-      }).filter(Boolean);
+      });
+      return data.filter((t) => t !== null);
     } catch (error) {
       this.logger.error(`Error fetching multiple prices: ${error.message}`, error.stack);
       throw new HttpException(
