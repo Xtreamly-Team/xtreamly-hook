@@ -1,12 +1,18 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException, createParamDecorator } from '@nestjs/common';
 import { env } from '@config/env.config';
-import {FirebaseUserService} from "@modules/firebase-user/services/firebase-user/firebase-user.service";
+import {FirebaseUser, FirebaseUserService} from "@modules/firebase-user/services/firebase-user/firebase-user.service";
 import {UserService} from "@modules/user/services/user/user.service";
+import {User} from "@modules/user/entities/user.entity/user.entity";
 
-export const User = createParamDecorator((data: unknown, ctx: ExecutionContext) => {
+export const UserContext = createParamDecorator((data: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
     return request.user; // Access the user from the request
 });
+
+export class AuthUser {
+    firebaseUser: FirebaseUser;
+    user: User;
+}
 
 @Injectable()
 export class AuthGuard implements CanActivate {
