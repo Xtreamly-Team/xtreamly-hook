@@ -9,9 +9,6 @@ RUN npm i -g pnpm
 # Copy package.json and pnpm-lock.yaml before installing dependencies
 COPY package.json pnpm-lock.yaml ./
 
-# Install application dependencies from the requirements file
-RUN pip install -r requirements.txt
-
 # Install dependencies using pnpm
 RUN pnpm install --frozen-lockfile
 
