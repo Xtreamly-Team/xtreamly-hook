@@ -10,7 +10,13 @@ class Positions:
         db_host = os.environ['DB_HOST']
         db_port = os.environ.get('DB_PORT', 5432)
         db_name = os.environ.get('DB_NAME', 'xtr_trade_db')
-        self.engine = create_engine(f'postgresql+psycopg2://{db_user}:{db_pwd}@{db_host}:{db_port}/{db_name}')
+
+        if "/cloudsql" in db_host:
+            url = f'postgresql+psycopg2://{db_user}:{db_pwd}@/{db_name}?host={db_host}'
+        else:
+            url = f'postgresql+psycopg2://{db_user}:{db_pwd}@{db_host}:{db_port}/{db_name}'
+
+        self.engine = create_engine(url)
 
     def get_active_positions(self, user_id: str):
         sql = 'SELECT * FROM positions WHERE "userId" = %(userId)s AND "status" = %(status)s'
