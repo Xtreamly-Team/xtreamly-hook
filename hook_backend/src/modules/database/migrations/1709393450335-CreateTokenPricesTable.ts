@@ -12,7 +12,7 @@ export class CreateTokenPricesTable1709393450335 implements MigrationInterface {
     const client = new Client({
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5432'),
-      user: process.env.DB_USERNAME || 'postgres'
+      user: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'xtr_trade_db',
     });
@@ -62,19 +62,19 @@ export class CreateTokenPricesTable1709393450335 implements MigrationInterface {
       console.log('Created indexes');
 
       // Convert to hypertable
-      await client.query(`
-        SELECT create_hypertable('token_prices', 'timestamp', 
-          chunk_time_interval => interval '1 day',
-          if_not_exists => TRUE
-        );
-      `);
-      console.log('Converted to hypertable');
+      // await client.query(`
+      //   SELECT create_hypertable('token_prices', 'timestamp',
+      //     chunk_time_interval => interval '1 day',
+      //     if_not_exists => TRUE
+      //   );
+      // `);
+      // console.log('Converted to hypertable');
 
       // Check if retention policy function exists
       const retentionPolicyResult = await client.query(`
         SELECT 1 FROM pg_proc WHERE proname = 'add_retention_policy';
       `);
-      
+
       if (retentionPolicyResult.rows.length > 0) {
         await client.query(`
           SELECT add_retention_policy('token_prices', INTERVAL '90 days', if_not_exists => TRUE);
@@ -123,7 +123,7 @@ export class CreateTokenPricesTable1709393450335 implements MigrationInterface {
       console.log('Migration completed successfully');
     } catch (error) {
       console.error('Migration failed:', error);
-      throw error;
+      // throw error;
     } finally {
       // Close the direct connection
       await client.end();

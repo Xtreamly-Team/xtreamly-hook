@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { UserService } from '@modules/user/services/user/user.service';
 import { RegisterUserDto, UserResponseDto } from '@modules/user/dto/user.dto/user.dto';
-  
+
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
