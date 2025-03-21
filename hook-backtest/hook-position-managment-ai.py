@@ -29,7 +29,7 @@ import seaborn as sns
 import itertools
 from settings.plot import tailwind, _style, _style_white
 
-folder='plots_position_managment'
+folder='plots_position_managment_ai'
 gmx_fee_entry = 0.001
 gmx_fee_exit = 0.001
 gmx_funding_rate = 0.0001
@@ -323,46 +323,45 @@ def _plot_pos_hedge(*arg):
 # =============================================================================
 # Simulate Hedge
 # =============================================================================
+
+# =============================================================================
+# perp_l_min = 25
+# perp_l_max = 25
+# perp_time_min = 6
+# perp_time_max = 12
+# 
+# data_hedge, data_perp = [], []
+# perp_times_max = [12, 18, 24,48, 72, 96]
+# for perp_time_max in perp_times_max:0
+# =============================================================================
+
 s = 'ETH'
 perp_type = 'short'
 perp_share = .05
-perp_l_min = 25
-perp_l_max = 25
-perp_time_min = 6
-perp_time_max = 12
 perp_tp = .30
-
-data_hedge, data_perp = [], []
-perp_times_max = [12, 18, 24,48, 72, 96]
-for perp_time_max in perp_times_max:0
-
 perp_state = {
     'lowvol': {
-        'perp_share': .05,
-        'perp_l_min': 40,
-        'perp_l_max': 40,
-        'perp_time_min': 6,
-        'perp_time_max': 24,
+        'l_min': 40,
+        'l_max': 40,
+        't_hours_min': 1,
+        't_hours_max': 12,
         },
     'midvol': {
-        'perp_share': .05,
-        'perp_l_min': 25,
-        'perp_l_max': 25,
-        'perp_time_min': 6,
-        'perp_time_max': 24,
+        'l_min': 25,
+        'l_max': 25,
+        't_hours_min': 1,
+        't_hours_max': 12,
         },
     'highvol': {
-        'perp_share': .05,
-        'perp_l_min': 8,
-        'perp_l_max': 12,
-        'perp_time_min': 6,
-        'perp_time_max': 12,
+        'l_min': 12,
+        'l_max': 12,
+        't_hours_min': 1,
+        't_hours_max': 12,
         },
     }
-
-perp_time_max = 12
-for i, position_id in enumerate(pool_ids[:13]):
-    print(perp_time_max, i, position_id)
+data_hedge, data_perps = [], []
+for i, position_id in enumerate(pool_ids[:]):
+    print(i, position_id)
     out = {'nr':i, 'id': position_id}
     pos = df_pos[df_pos['id'] == position_id].iloc[0].to_dict()
     pos_log = df_log[df_log['position_id'] == position_id].copy()
@@ -395,8 +394,10 @@ for i, position_id in enumerate(pool_ids[:13]):
     p_gmx = df_p['open'].iloc[0]
     collateral = np.abs(pos_org['v'])*(perp_share)
     leverage = int((1/(p_b/p-1)))-1
-    leverage = min(perp_l_max,max(perp_l_min,leverage))     
+    perp = perp_state[df_p['state'].iloc[0]]
+    leverage = min(perp['l_max'],max(perp['l_min'],leverage))     
     pos_gmx = _pos_gmx(t, p_gmx, df_p, perp_type, collateral, leverage)
+    pos_gmx = {**pos_gmx, **perp}
     pos_gmx['state'] = df_p['state'].iloc[0]
 
     # Simulate
@@ -406,16 +407,13 @@ for i, position_id in enumerate(pool_ids[:13]):
         p = r['open']
         pos_uni = data_uni[-1].copy()
         pos_gmx = data_gmx[-1].copy()
-        
         perp = perp_state[df_p['state'].iloc[i]]
-        
-        
-        
+
         if len(pos_gmx) > 0:
             new_gmx = _upd_gmx(p, t, df_p, pos_gmx)
             new_uni = _upd_uni(p, t, pos_uni)
             
-            close = perp_time_max <= new_gmx['t_hours'] or new_gmx['liq']
+            close = new_gmx['t_hours_max'] <= new_gmx['t_hours'] or new_gmx['liq']
             if close:
                 new_uni = _pos_uni(t, p, p_a, p_b, 
                                    new_uni['x'] * (1+new_gmx['v']/new_uni['v']), 
@@ -429,12 +427,13 @@ for i, position_id in enumerate(pool_ids[:13]):
             if hedge:
                 collateral = pos_uni['v']*perp_share
                 leverage = int((1/(p_b/p-1)))-1
-                leverage = min(perp_l_max,max(perp_l_min,leverage))    
+                leverage = min(perp['l_max'],max(perp['l_min'],leverage))    
                 new_uni = _pos_uni(t, p, p_a, p_b, 
                                    new_uni['x'] * (1-collateral/new_uni['v']), 
                                    new_uni['y'] * (1-collateral/new_uni['v']))
                 new_uni['hedge'] = hedge
                 new_gmx = _pos_gmx(t, p, df_p, perp_type, collateral, leverage)
+                new_gmx = {**new_gmx, **perp}
                 new_gmx['state'] = df_p['state'].iloc[i]
             else: new_gmx = {}
         data_uni += [new_uni]
@@ -483,7 +482,6 @@ for i, position_id in enumerate(pool_ids[:13]):
     conc_imprv = (conc_avg_hedge-conc_avg_org)/pos_uni['v'] 
 
     out = {
-        'perp_time_max': perp_time_max,
         'position_id': position_id,
         'position_time_min': pos_log['_time'].min(),
         'position_time_max': pos_log['_time'].max(),
@@ -496,135 +494,207 @@ for i, position_id in enumerate(pool_ids[:13]):
         'hedged_perc_ret': df_p['ret_hedge'].iloc[-1],
         'hedged_perc_impr': df_p['ret_hedge'].iloc[-1] - df_p['ret_org'].iloc[-1],
         'hedged_usd_v': df_uni['v'].iloc[-1] + df_gmx['v'].iloc[-1],
-        'hedged_imprv_exp': lim_imprv,
-        'hedged_imprv_conc': conc_imprv,
-        'hedged_imprv_real': df_p['ret_hedge'].iloc[-1]-df_p['ret_org'].iloc[-1],
         'hedged_usd_perp_count': df_perps.shape[0],
         'hedged_usd_perp_liq': np.sum(df_perps['liq']),
         'hedged_usd_perp_collateral': df_perps['collateral'].sum(),
         'hedged_usd_perp_pnl': df_perps['pnl'].sum(),
         'hedged_usd_perp_ret': df_perps['pnl'].sum()/df_perps['collateral'].sum(),
         'hedged_usd_perp_cost_rate': df_perps['cost_rate'].iloc[-1],
+        'hedged_imprv_exp': lim_imprv,
+        'hedged_imprv_conc': conc_imprv,
+        'hedged_imprv_real': df_p['ret_hedge'].iloc[-1]-df_p['ret_org'].iloc[-1],
         }
     data_hedge += [out]
-    data_perp += [df_perps]
-    _plot_pos_hedge()
+    data_perps += [df_perps]
+    #_plot_pos_hedge()
         
 df_pos_hedge = pd.DataFrame(data_hedge)
 df_pos_hedge['duration'] = (df_pos_hedge['position_time_max']-df_pos_hedge['position_time_min']).dt.total_seconds()/(24*3600) 
-df_perps_all = pd.concat(data_perp)
+df_perps_all = pd.concat(data_perps)
 df_perps_all['ret'] = df_perps_all['pnl']/df_perps_all['collateral']
+
+df_pos_hedge['hedged_imprv_real'].mean()
+
+
 # =============================================================================
-# # =============================================================================
-# # Plots
-# # =============================================================================
-# for hedge_time_max in hedge_times_max:
-#     
-#     df_pos_hedge = pd.DataFrame(data_hedge)
-#     df_pos_hedge['duration'] = (df_pos_hedge['position_time_max']-df_pos_hedge['position_time_min']).dt.total_seconds()/(24*3600)
-#     df_pos_hedge = df_pos_hedge[df_pos_hedge['hedge_time_max']==hedge_time_max]
-#     df_perps_all = pd.concat(data_perp)
-#     df_perps_all = df_perps_all[df_perps_all['hedge_time_max']==hedge_time_max]
-#     
-#     
-#     df_pos_hedge = pd.DataFrame(data_hedge)
-#     df_pos_hedge['duration'] = (df_pos_hedge['position_time_max']-df_pos_hedge['position_time_min']).dt.total_seconds()/(24*3600) 
-#     df_perps_all = pd.concat(data_perp)
-#     
-#     _style_white()
-#     fig, ax = plt.subplots(figsize=(16, 7))
-#     df = df_pos_hedge.copy()
-#     cols = ['position_perc_ret', 'hedged_perc_ret']
-#     ax.set_title(f"Histogram of % Performance for Original and Hedged Positions", pad=30)
-#     ax.set_ylabel(f"# Count", labelpad=10)
-#     ax.set_xlabel(f"% Return", labelpad=10)
-#     bin_edges = np.linspace(df['position_perc_ret'].min(), df['position_perc_ret'].max(), 40)
-#     bin_width = np.diff(bin_edges)[0]  # Calculate bin width
-#     bar_width = bin_width / 2  # Divide bins equally among the three categories
-#     for i, (c, color, lbl) in enumerate(zip(cols, [tailwind['stone-400'], tailwind['indigo-400']], ['Original','Hedged'])):
-#         counts, _ = np.histogram(df[c], bins=bin_edges)
-#         ax.bar(bin_edges[:-1] + i * bar_width, counts, width=bar_width, color=color, alpha=0.9, label=f"{lbl}")
-#     yticks = ax.get_yticks()
-#     ax.set_yticks(ax.get_yticks())
-#     ax.set_xticks(ax.get_xticks())
-#     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
-#     ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
-#     ax.yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.0f}'.format(x)))
-#     ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.1f}%'.format(x*100)))
-#     legend = ax.legend(loc='upper left')
-#     legend.get_frame().set_alpha(0.9)
-#     ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
-#     for spine in ax.spines.values(): spine.set_visible(False)
-#     fig.tight_layout(rect=[0.004, 0.004, .996, .996])
-#     fig.savefig(os.path.join(folder, f'{hedge_time_max} Histogram Performance.png'), dpi=200)
-#     fig.clf()
-#     
-#     _style_white()
-#     fig, ax = plt.subplots(figsize=(16, 7))
-#     df = df_pos_hedge.copy()
-#     ax.set_title(f"Histogram of % Improvement from Original to Hedged Positions", pad=30)
-#     ax.set_ylabel(f"# Count", labelpad=10)
-#     ax.set_xlabel(f"% Improvement", labelpad=10)
-#     ax.hist(df['hedged_perc_impr'],bins=40, color=tailwind['teal-400'], alpha=0.9, label=f"Improvement on Hedging Position")
-#     yticks = ax.get_yticks()
-#     ax.set_yticks(ax.get_yticks())
-#     ax.set_xticks(ax.get_xticks())
-#     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
-#     ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
-#     ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.1f}%'.format(x*100)))
-#     legend = ax.legend(loc='upper left')
-#     legend.get_frame().set_alpha(0.9)
-#     ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
-#     for spine in ax.spines.values(): spine.set_visible(False)
-#     fig.tight_layout(rect=[0.004, 0.004, .996, .996])
-#     fig.savefig(os.path.join(folder, f'{hedge_time_max} Histogram Improvement.png'), dpi=200)
-#     fig.clf()
-#     
-#     
-#     _style_white()
-#     fig, ax = plt.subplots(figsize=(16, 7))
-#     df = df_pos_hedge.copy()
-#     ax.set_title(f"Histogram of Hedging Positions % Total Returns on Perpetuals", pad=30)
-#     ax.set_ylabel(f"# Count", labelpad=10)
-#     ax.set_xlabel(f"% Return Perpetuals", labelpad=10)
-#     ax.hist(df['hedged_usd_perp_ret'],bins=40, color=tailwind['indigo-700'], alpha=0.9, label=f"LP Active Time")
-#     yticks = ax.get_yticks()
-#     ax.set_yticks(ax.get_yticks())
-#     ax.set_xticks(ax.get_xticks())
-#     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
-#     ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
-#     ax.yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.0f}'.format(x)))
-#     ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.0f}'.format(x*100)))
-#     legend = ax.legend(loc='upper left')
-#     legend.get_frame().set_alpha(0.9)
-#     ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
-#     for spine in ax.spines.values(): spine.set_visible(False)
-#     fig.tight_layout(rect=[0.004, 0.004, .996, .996])
-#     fig.savefig(os.path.join(folder, f'{hedge_time_max} Histogram Return Perpetuals.png'), dpi=200)
-#     fig.clf()
-# 
-# _style_white()
-# fig, ax = plt.subplots(figsize=(16, 7))
-# df = df_pos_hedge.copy()
-# ax.set_title(f"Histogram of % Active Time in LP Positions", pad=30)
-# ax.set_ylabel(f"# Count", labelpad=10)
-# ax.set_xlabel(f"% Active", labelpad=10)
-# ax.hist(df['position_perc_active'],bins=40, color=tailwind['teal-400'], alpha=0.9, label=f"% Active Time")
-# yticks = ax.get_yticks()
-# ax.set_yticks(ax.get_yticks())
-# ax.set_xticks(ax.get_xticks())
-# ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
-# ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
-# ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.1f}%'.format(x*100)))
-# legend = ax.legend(loc='upper left')
-# legend.get_frame().set_alpha(0.9)
-# ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
-# for spine in ax.spines.values(): spine.set_visible(False)
-# fig.tight_layout(rect=[0.004, 0.004, .996, .996])
-# fig.savefig(os.path.join(folder, f'Histogram Active.png'), dpi=200)
-# fig.clf()
+# Plots
 # =============================================================================
+#for hedge_time_max in hedge_times_max:
     
+df_pos_hedge = pd.DataFrame(data_hedge)
+df_pos_hedge['duration'] = (df_pos_hedge['position_time_max']-df_pos_hedge['position_time_min']).dt.total_seconds()/(24*3600)
+
+
+df_perps_all = pd.concat(data_perps)
+df_perps_all['ret'] = df_perps_all['pnl']/df_perps_all['collateral']
+
+_style_white()
+fig, ax = plt.subplots(figsize=(16, 7))
+df = df_perps_all.copy()
+ax.set_title(f"Histogram of % Return on Hedging", pad=30)
+ax.set_ylabel(f"% Share", labelpad=20)
+ax.set_xlabel(f"% Improvement", labelpad=20)
+bin_edges = np.linspace(df['ret'].min(), df['ret'].max(), 40)
+bin_width = np.diff(bin_edges)[0]  # Calculate bin width
+bar_width = bin_width / 3  # Divide bins equally among the three categories
+for i, (state, color) in enumerate(zip(
+    ['lowvol', 'midvol', 'highvol'], 
+    [tailwind['teal-400'], tailwind['amber-400'], tailwind['pink-400']]
+)):
+    counts, _ = np.histogram(df[df['state'] == state]['ret'], bins=bin_edges)
+    ax.bar(bin_edges[:-1] + i * bar_width, counts/sum(counts), width=bar_width, color=color, alpha=0.9, label=state.capitalize())
+yticks = ax.get_yticks()
+ax.vlines(0, 0, max(yticks), color=tailwind['stone-300'])
+ax.set_yticks(ax.get_yticks())
+ax.set_xticks(ax.get_xticks())
+ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.1f}%'.format(x*100)))
+legend = ax.legend(loc='upper left')
+legend.get_frame().set_alpha(0.9)
+ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
+for spine in ax.spines.values(): spine.set_visible(False)
+fig.tight_layout(rect=[0.004, 0.004, .996, .996])
+fig.savefig(os.path.join(folder, f'Histogram Return Perpetuals.png'), dpi=200)
+fig.clf()
+
+_style_white()
+fig, ax = plt.subplots(figsize=(16, 7))
+df = df_pos_hedge.copy()
+cols = ['position_perc_ret', 'hedged_perc_ret']
+ax.set_title(f"Histogram of % Performance for Original and Hedged Positions", pad=30)
+ax.set_ylabel(f"# Count", labelpad=10)
+ax.set_xlabel(f"% Return", labelpad=10)
+bin_edges = np.linspace(df['position_perc_ret'].min(), df['position_perc_ret'].max(), 40)
+bin_width = np.diff(bin_edges)[0]  # Calculate bin width
+bar_width = bin_width / 2  # Divide bins equally among the three categories
+for i, (c, color, lbl) in enumerate(zip(cols, [tailwind['stone-400'], tailwind['indigo-400']], ['Original','Hedged'])):
+    counts, _ = np.histogram(df[c], bins=bin_edges)
+    ax.bar(bin_edges[:-1] + i * bar_width, counts, width=bar_width, color=color, alpha=0.9, label=f"{lbl}")
+yticks = ax.get_yticks()
+ax.set_yticks(ax.get_yticks())
+ax.set_xticks(ax.get_xticks())
+ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+ax.yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.0f}'.format(x)))
+ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.1f}%'.format(x*100)))
+legend = ax.legend(loc='upper left')
+legend.get_frame().set_alpha(0.9)
+ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
+for spine in ax.spines.values(): spine.set_visible(False)
+fig.tight_layout(rect=[0.004, 0.004, .996, .996])
+fig.savefig(os.path.join(folder, f'Histogram Performance.png'), dpi=200)
+fig.clf()
+    
+_style_white()
+fig, ax = plt.subplots(figsize=(16, 7))
+df = df_pos_hedge.copy()
+ax.set_title(f"Histogram of % Improvement from Original to Hedged Positions", pad=30)
+ax.set_ylabel(f"# Count", labelpad=10)
+ax.set_xlabel(f"% Improvement", labelpad=10)
+ax.hist(df['hedged_perc_impr'],bins=50, color=tailwind['teal-400'], alpha=0.9, label=f"Improvement on Hedging Position")
+yticks = ax.get_yticks()
+ax.set_yticks(ax.get_yticks())
+ax.set_xticks(ax.get_xticks())
+ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.1f}%'.format(x*100)))
+legend = ax.legend(loc='upper left')
+legend.get_frame().set_alpha(0.9)
+ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
+for spine in ax.spines.values(): spine.set_visible(False)
+fig.tight_layout(rect=[0.004, 0.004, .996, .996])
+fig.savefig(os.path.join(folder, f'Histogram Improvement.png'), dpi=200)
+fig.clf()
+    
+    
+_style_white()
+fig, ax = plt.subplots(figsize=(16, 7))
+df = df_pos_hedge.copy()
+ax.set_title(f"Histogram of Hedging Positions % Total Returns on Perpetuals", pad=30)
+ax.set_ylabel(f"# Count", labelpad=10)
+ax.set_xlabel(f"% Return Perpetuals", labelpad=10)
+ax.hist(df['hedged_usd_perp_ret'],bins=40, color=tailwind['indigo-700'], alpha=0.9, label=f"LP Active Time")
+yticks = ax.get_yticks()
+ax.set_yticks(ax.get_yticks())
+ax.set_xticks(ax.get_xticks())
+ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+ax.yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.0f}'.format(x)))
+ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.0f}'.format(x*100)))
+legend = ax.legend(loc='upper left')
+legend.get_frame().set_alpha(0.9)
+ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
+for spine in ax.spines.values(): spine.set_visible(False)
+fig.tight_layout(rect=[0.004, 0.004, .996, .996])
+fig.savefig(os.path.join(folder, f'Histogram Return Perpetuals.png'), dpi=200)
+fig.clf()
+
+_style_white()
+fig, ax = plt.subplots(figsize=(16, 7))
+df = df_pos_hedge.copy()
+ax.set_title(f"Histogram of % Active Time in LP Positions", pad=30)
+ax.set_ylabel(f"# Count", labelpad=10)
+ax.set_xlabel(f"% Active", labelpad=10)
+ax.hist(df['position_perc_active'],bins=40, color=tailwind['teal-400'], alpha=0.9, label=f"% Active Time")
+yticks = ax.get_yticks()
+ax.set_yticks(ax.get_yticks())
+ax.set_xticks(ax.get_xticks())
+ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '{:,.1f}%'.format(x*100)))
+legend = ax.legend(loc='upper left')
+legend.get_frame().set_alpha(0.9)
+ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
+for spine in ax.spines.values(): spine.set_visible(False)
+fig.tight_layout(rect=[0.004, 0.004, .996, .996])
+fig.savefig(os.path.join(folder, f'Histogram Active.png'), dpi=200)
+fig.clf()
+    
+# Aggr Stats
+df_pos_hedge = pd.DataFrame(data_hedge)
+df_pos_hedge['duration'] = (df_pos_hedge['position_time_max']-df_pos_hedge['position_time_min']).dt.total_seconds()/(24*3600)
+df_pos_hedge['pool'] = pool
+df_hedge_agr = df_pos_hedge.groupby(['pool']).agg(
+        position_perc_active=('position_perc_active', 'mean'),
+        position_perc_ret=('position_perc_ret', 'mean'),
+        hedged_perc_ret = ('hedged_perc_ret','mean'),
+        hedged_usd_perp_count = ('hedged_usd_perp_count','mean'),
+        hedged_usd_perp_liq = ('hedged_usd_perp_liq','mean'),
+        ).reset_index()
+
+df_perps_all = pd.concat(data_perps)
+df_perps_all['ret'] = df_perps_all['pnl']/df_perps_all['collateral']
+df_perp_agr = df_perps_all.groupby(['state']).agg(
+        perp_ret=('ret', 'mean'),
+        liq = ('liq','mean'),
+        position_id=('position_id', 'nunique')
+        ).reset_index()
+cols_perp = {
+    'state': 'Status',
+    'position_id': '# Positions',
+    'perp_ret': '% Performance',
+    'liq': '% Liquidated',
+    }
+df_perp_agr = df_perp_agr[cols_perp.keys()].rename(columns=cols_perp)
+for c in df_perp_agr.columns:
+    if '%' in c:
+        df_perp_agr[c]*=1
+        df_perp_agr[c] = df_perp_agr[c].apply(lambda x: f"{x:.2%}")
+
+fig, ax = plt.subplots(figsize=(8, 1))  # Adjust figure size
+ax.axis('tight')
+ax.axis('off')
+table = ax.table(cellText=df_perp_agr.values, 
+                 colLabels=df_perp_agr.columns, 
+                 cellLoc='center', 
+                 loc='center')
+ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
+for spine in ax.spines.values(): spine.set_visible(False)
+plt.savefig(os.path.join(folder, f'Perps Performance.png'), bbox_inches='tight', dpi=300)
+
+
+
 # =============================================================================
 # _style_white()
 # fig, ax = plt.subplots(figsize=(16, 7))
@@ -649,47 +719,6 @@ df_perps_all['ret'] = df_perps_all['pnl']/df_perps_all['collateral']
 # fig.clf()
 # =============================================================================
 
-# =============================================================================
-# # Aggr Stats
-# df_pos_hedge = pd.DataFrame(data_hedge)
-# df_pos_hedge['duration'] = (df_pos_hedge['position_time_max']-df_pos_hedge['position_time_min']).dt.total_seconds()/(24*3600)
-# 
-# df_hedge_agr = df_pos_hedge.groupby(['hedge_time_max']).agg(
-#         position_perc_active=('position_perc_active', 'mean'),
-#         position_perc_ret=('position_perc_ret', 'mean'),
-#         hedged_perc_ret = ('hedged_perc_ret','mean'),
-#         hedged_usd_perp_count = ('hedged_usd_perp_count','mean'),
-#         ).reset_index()
-# df_perps_all = pd.concat(data_perp)
-# df_perp_agr = df_perps_all.groupby(['hedge_time_max', 'state']).agg(
-#         perp_ret=('ret', 'mean'),
-#         liq = ('liq','mean'),
-#         position_id=('position_id', 'nunique')
-#         ).reset_index()
-# df_pos_hedge_agr = df_pos_hedge_agr[df_pos_hedge_agr['gmx_duration_max']==12]
-# cols_hedge = {
-#     'market_status': 'Status',
-#     'position_id': '# Positions',
-#     'hedged_performance': '% Performance with Hedge',
-#     'hedge_improve': '% Improvement with Hedge',
-#     }
-# df_pos_hedge_agr = df_pos_hedge_agr[cols_hedge.keys()].rename(columns=cols_hedge)
-# for c in df_pos_hedge_agr.columns:
-#     if '%' in c:
-#         df_pos_hedge_agr[c]*=1
-#         df_pos_hedge_agr[c] = df_pos_hedge_agr[c].apply(lambda x: f"{x:.2%}")
-# 
-# fig, ax = plt.subplots(figsize=(8, 1))  # Adjust figure size
-# ax.axis('tight')
-# ax.axis('off')
-# table = ax.table(cellText=df_pos_hedge_agr.values, 
-#                  colLabels=df_pos_hedge_agr.columns, 
-#                  cellLoc='center', 
-#                  loc='center')
-# ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
-# for spine in ax.spines.values(): spine.set_visible(False)
-# plt.savefig(os.path.join('plots', f'Table Improvement.png'), bbox_inches='tight', dpi=300)
-# =============================================================================
 
 # position_id = '878458_0x902a7cebc98daa5a0e6de468052c75719c014797'
 # position_id = '879576_0x5b393bd3c1d0d334b8bb9ae106edb4ec33801a3c'
@@ -697,52 +726,54 @@ df_perps_all['ret'] = df_perps_all['pnl']/df_perps_all['collateral']
 # position_id = '873626_0x37c4d1abc89e1bb1ceaa9df3c17d4464fe95e21c'
 # position_id = '840439_0x4942e2b839fc479c27c496b7758bab94ceb6b684'
 
-t = df_p['_time'].iloc[0]
-p = deposited['price'] #df_p['open'].iloc[0]
-pos_uni = _pos_uni(t, p, p_a, p_b, x_opn*(1-perp_share), y_opn*(1-perp_share))
-p_gmx = p#df_p['open'].iloc[0]
-collateral = np.abs(pos_org['v'])*(perp_share)
-leverage = int((1/(p_b/p-1)))-1
-leverage = min(perp_l_max,max(perp_l_min,leverage))     
-pos_gmx = _pos_gmx(t, p_gmx, df_p, perp_type, collateral, leverage)
-pos_gmx_min = _pos_gmx(t, (p+p_a)/2, df_p, perp_type, collateral, leverage)
-pos_gmx_max = _pos_gmx(t, p*1.01, df_p, perp_type, collateral, leverage)
-p_values = np.linspace(pos_uni['p']/1.4, pos_uni['p']*1.4, 1000)
-p_conc = (pos_uni['p_a']<=p_values) & (p_values<=pos_uni['p_b'])
-df_gmx_v = pd.DataFrame([_upd_gmx(p, t, df_p, pos_gmx.copy()) for p in p_values])
-df_gmx_min_v = pd.DataFrame([_upd_gmx(p, t, df_p, pos_gmx_min.copy()) for p in p_values])
-df_gmx_max_v = pd.DataFrame([_upd_gmx(p, t, df_p, pos_gmx_max.copy()) for p in p_values])
-df_uni_v = pd.DataFrame([_upd_uni(p, t, pos_uni.copy()) for p in p_values])
-df_org_v = pd.DataFrame([_upd_uni(p, t, pos_org.copy()) for p in p_values]) 
-
-_style_white()
-fig, ax = plt.subplots(figsize=(16, 7))
-ax.set_title(f"Positions Value for Price Scenarios", pad=35)
-ax.text(0.5, 1.06, sub_exp_imprv, ha='center', va='center', fontsize=14, transform=ax.transAxes)
-ax.set_ylabel(f"$ Value", labelpad=10)
-ax.set_xlabel(f"$ Price Scenario", labelpad=10)
-ax.plot(p_values, df_org_v['v'], color=tailwind['stone-600'], alpha=0.9, linewidth=3, label=f"Original Position")
-ax.plot(p_values, df_uni_v['v'] + df_gmx_v['v'], color=tailwind['indigo-600'], alpha=0.99, linewidth=3, label=f"Hedged Position")
-ax.plot(p_values, df_uni_v['v'] + df_gmx_min_v['v'], color=tailwind['indigo-300'], alpha=0.99, linewidth=3, label=f"Hedged Position Min")
-ax.plot(p_values, df_uni_v['v'] + df_gmx_max_v['v'], color=tailwind['indigo-800'], alpha=0.99, linewidth=3, label=f"Hedged Position Max")
-y_min, y_max = max(.0, ax.get_yticks().min()), ax.get_yticks().max()
-ax.vlines(pos_gmx['p_opn'], y_min, y_max, color=tailwind['stone-900'], alpha=.9, label="Price Open")
-ax.vlines(pos_gmx['p_liq'], y_min, y_max, color=tailwind['red-500'], label="Price Perp. Liquidation")
-ax.fill_between([p_a,p_b], [y_min, y_min], [y_max, y_max], color=tailwind['emerald-400'], alpha=0.6, label="LP Active") 
-ax.set_xlim((p_values.min()),p_values.max())
-ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '${:,.0f}'.format(x)))
-ax.yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '${:,.0f}'.format(x)))
-ax.set_yticks(ax.get_yticks())
-ax.set_xticks(ax.get_xticks())
-ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
-ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
-ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
-for spine in ax.spines.values(): spine.set_visible(False)
-legend = ax.legend(loc='lower right', fontsize=14)
-legend.get_frame().set_facecolor('white')  # Sets the background color to white
-legend.get_frame().set_edgecolor('black')  # Optional: Adds a border to the legend
-legend.get_frame().set_alpha(.6)  # Ensures no transparency (fully opaque)
-fig.tight_layout(rect=[0.01, 0.01, .99, .99])
-fig.savefig(os.path.join(folder, f'Position Value {position_id}'), dpi=200)
-plt.show()
-fig.clf()
+# =============================================================================
+# t = df_p['_time'].iloc[0]
+# p = deposited['price'] #df_p['open'].iloc[0]
+# pos_uni = _pos_uni(t, p, p_a, p_b, x_opn*(1-perp_share), y_opn*(1-perp_share))
+# p_gmx = p#df_p['open'].iloc[0]
+# collateral = np.abs(pos_org['v'])*(perp_share)
+# leverage = int((1/(p_b/p-1)))-1
+# leverage = min(perp_l_max,max(perp_l_min,leverage))     
+# pos_gmx = _pos_gmx(t, p_gmx, df_p, perp_type, collateral, leverage)
+# pos_gmx_min = _pos_gmx(t, (p+p_a)/2, df_p, perp_type, collateral, leverage)
+# pos_gmx_max = _pos_gmx(t, p*1.01, df_p, perp_type, collateral, leverage)
+# p_values = np.linspace(pos_uni['p']/1.4, pos_uni['p']*1.4, 1000)
+# p_conc = (pos_uni['p_a']<=p_values) & (p_values<=pos_uni['p_b'])
+# df_gmx_v = pd.DataFrame([_upd_gmx(p, t, df_p, pos_gmx.copy()) for p in p_values])
+# df_gmx_min_v = pd.DataFrame([_upd_gmx(p, t, df_p, pos_gmx_min.copy()) for p in p_values])
+# df_gmx_max_v = pd.DataFrame([_upd_gmx(p, t, df_p, pos_gmx_max.copy()) for p in p_values])
+# df_uni_v = pd.DataFrame([_upd_uni(p, t, pos_uni.copy()) for p in p_values])
+# df_org_v = pd.DataFrame([_upd_uni(p, t, pos_org.copy()) for p in p_values]) 
+# 
+# _style_white()
+# fig, ax = plt.subplots(figsize=(16, 7))
+# ax.set_title(f"Positions Value for Price Scenarios", pad=35)
+# ax.text(0.5, 1.06, sub_exp_imprv, ha='center', va='center', fontsize=14, transform=ax.transAxes)
+# ax.set_ylabel(f"$ Value", labelpad=10)
+# ax.set_xlabel(f"$ Price Scenario", labelpad=10)
+# ax.plot(p_values, df_org_v['v'], color=tailwind['stone-600'], alpha=0.9, linewidth=3, label=f"Original Position")
+# ax.plot(p_values, df_uni_v['v'] + df_gmx_v['v'], color=tailwind['indigo-600'], alpha=0.99, linewidth=3, label=f"Hedged Position")
+# ax.plot(p_values, df_uni_v['v'] + df_gmx_min_v['v'], color=tailwind['indigo-300'], alpha=0.99, linewidth=3, label=f"Hedged Position Min")
+# ax.plot(p_values, df_uni_v['v'] + df_gmx_max_v['v'], color=tailwind['indigo-800'], alpha=0.99, linewidth=3, label=f"Hedged Position Max")
+# y_min, y_max = max(.0, ax.get_yticks().min()), ax.get_yticks().max()
+# ax.vlines(pos_gmx['p_opn'], y_min, y_max, color=tailwind['stone-900'], alpha=.9, label="Price Open")
+# ax.vlines(pos_gmx['p_liq'], y_min, y_max, color=tailwind['red-500'], label="Price Perp. Liquidation")
+# ax.fill_between([p_a,p_b], [y_min, y_min], [y_max, y_max], color=tailwind['emerald-400'], alpha=0.6, label="LP Active") 
+# ax.set_xlim((p_values.min()),p_values.max())
+# ax.xaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '${:,.0f}'.format(x)))
+# ax.yaxis.set_major_formatter(mtick.FuncFormatter(lambda x, pos: '${:,.0f}'.format(x)))
+# ax.set_yticks(ax.get_yticks())
+# ax.set_xticks(ax.get_xticks())
+# ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+# ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+# ax.grid(True, linestyle='-', linewidth=1, alpha=0.2)
+# for spine in ax.spines.values(): spine.set_visible(False)
+# legend = ax.legend(loc='lower right', fontsize=14)
+# legend.get_frame().set_facecolor('white')  # Sets the background color to white
+# legend.get_frame().set_edgecolor('black')  # Optional: Adds a border to the legend
+# legend.get_frame().set_alpha(.6)  # Ensures no transparency (fully opaque)
+# fig.tight_layout(rect=[0.01, 0.01, .99, .99])
+# fig.savefig(os.path.join(folder, f'Position Value {position_id}'), dpi=200)
+# plt.show()
+# fig.clf()
+# =============================================================================
