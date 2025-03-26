@@ -14,7 +14,7 @@ export class PriceUpdateService {
     private dataSource: DataSource,
   ) {}
 
-  @Cron(CronExpression.EVERY_MINUTE)
+  // @Cron(CronExpression.EVERY_MINUTE)
   async updatePrices() {
     // Prevent concurrent updates
     if (this.isUpdating) {
@@ -39,7 +39,7 @@ export class PriceUpdateService {
 
   // This method is now called directly after price updates
   // but we also keep a separate scheduled refresh as a backup
-  @Cron('*/5 * * * *') // Every 5 minutes as a backup
+  // @Cron('*/5 * * * *') // Every 5 minutes as a backup
   async refreshMaterializedView() {
     // Prevent concurrent refreshes
     if (this.isRefreshing) {

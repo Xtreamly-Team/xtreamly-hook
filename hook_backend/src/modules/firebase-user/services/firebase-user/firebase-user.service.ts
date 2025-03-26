@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 
 export class FirebaseUser {
   public: string;
-  private: string;
+  private: `0x${string}`;
 }
 
 @Injectable()
