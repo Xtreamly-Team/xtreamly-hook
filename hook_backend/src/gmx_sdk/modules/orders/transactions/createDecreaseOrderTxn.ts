@@ -5,7 +5,7 @@ import type { Token, TokensData } from "types/tokens";
 import type { GmxSdk } from "../../../index";
 import type { PriceOverrides } from "./createIncreaseOrderTxn";
 
-import { abis } from "../../../abis";
+import { abis } from "abis";
 import { convertTokenAddress, NATIVE_TOKEN_ADDRESS } from "configs/tokens";
 import { isMarketOrderType } from "utils/orders";
 import { simulateExecuteOrder } from "utils/simulateExecuteOrder";

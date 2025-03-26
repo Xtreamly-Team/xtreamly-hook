@@ -1,4 +1,4 @@
-import { abis } from "../../../abis";
+import { abis } from "abis";
 import { getContract } from "configs/contracts";
 import { convertTokenAddress, NATIVE_TOKEN_ADDRESS } from "configs/tokens";
 

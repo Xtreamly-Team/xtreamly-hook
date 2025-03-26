@@ -1,4 +1,4 @@
-import { abis } from "../../../abis";
+import { abis } from "abis";
 import { getContract } from "configs/contracts";
 
 import type { GmxSdk } from "../../../index";

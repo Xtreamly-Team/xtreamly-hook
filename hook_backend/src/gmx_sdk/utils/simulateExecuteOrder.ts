@@ -1,6 +1,6 @@
 import { Abi, Address, decodeErrorResult, encodeFunctionData, withRetry } from "viem";
 
-import { abis } from "../abis";
+import { abis } from "abis";
 
 import { getContract } from "configs/contracts";
 import { convertTokenAddress } from "configs/tokens";

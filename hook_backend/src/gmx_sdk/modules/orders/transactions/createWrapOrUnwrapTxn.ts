@@ -1,7 +1,7 @@
 import { Abi, Address } from "viem";
 
 import { getWrappedToken } from "configs/tokens";
-import { abis } from "../../../abis";
+import { abis } from "abis";
 
 import type { GmxSdk } from "../../../index";
 

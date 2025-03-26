@@ -1,6 +1,6 @@
 import { Abi, encodeFunctionData, zeroAddress, zeroHash } from "viem";
 
-import { abis } from "../../../abis";
+import { abis } from "abis";
 import { getContract } from "configs/contracts";
 import { NATIVE_TOKEN_ADDRESS, convertTokenAddress } from "configs/tokens";
 

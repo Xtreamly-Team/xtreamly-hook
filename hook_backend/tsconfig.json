@@ -31,6 +31,7 @@
       "modules/*": ["src/gmx_sdk/modules/*"],
       "configs/*": ["src/gmx_sdk/configs/*"],
       "types/*": ["src/gmx_sdk/types/*"],
+      "abis": ["src/gmx_sdk/abis/index"],
       "index": ["src/gmx_sdk/index"],
       "@gmx_sdk": ["src/gmx_sdk/index"],
     }
