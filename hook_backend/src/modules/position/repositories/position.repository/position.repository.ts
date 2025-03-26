@@ -18,6 +18,18 @@ export class PositionRepository extends Repository<Position> {
     });
   }
 
+  async findPositionsByUserId(userId: string): Promise<Position[]> {
+    return this.find({
+      where: {
+        userId,
+      },
+      relations: ['user'],
+      order: {
+        updatedAt: 'DESC',
+      },
+    });
+  }
+
   async findPositionById(id: string): Promise<Position | null> {
     return this.findOne({
       where: { id },

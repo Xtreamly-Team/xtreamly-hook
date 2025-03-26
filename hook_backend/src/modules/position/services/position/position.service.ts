@@ -23,7 +23,7 @@ export class PositionService {
 
   async getUserPositions(userId: string): Promise<Position[]> {
     await this.userService.getUserById(userId); // Validate user exists
-    return this.positionRepository.findActivePositionsByUserId(userId);
+    return this.positionRepository.findPositionsByUserId(userId);
   }
 
   async createPosition(positionData: Partial<Position>): Promise<Position> {
