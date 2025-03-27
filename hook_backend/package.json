@@ -44,6 +44,7 @@
     "db:seed-token-prices": "ts-node -r tsconfig-paths/register scripts/seed-token-prices.ts"
   },
   "dependencies": {
+    "@gmx-io/sdk": "0.1.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
