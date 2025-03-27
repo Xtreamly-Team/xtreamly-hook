@@ -14,7 +14,7 @@ import {
 } from "@app/gmx_sdk/utils/tokens";
 import { USD_DECIMALS } from "@app/gmx_sdk/configs/factors";
 import { sleep } from "@app/gmx_sdk/utils/common";
-
+import { parseEther } from "viem";
 
 
 
@@ -98,17 +98,7 @@ export async function shortIt() {
   const FULL_BPS = 10000n; // 100%
 
 
- 
 
-
-
-  // console.log(collateralTokenName)
-
-  
-  // const marketInfo = marketsInfoData[positionsArray[0].marketAddress];
-
-
-  console.log("Creating stop loss order. Creating...");
   
   // Get market info for the position
   // let marketInfo = marketsInfoData[positionsArray[0].marketAddress];
@@ -125,48 +115,22 @@ export async function shortIt() {
 
   try {
     console.log("Attempting to create increase order...");
-    // await sdk.orders.createIncreaseOrder({
-    //   marketsInfoData: marketsInfoData!,
-    //   tokensData,
-    //   isLimit: false,
-    //   isLong: false,
-    //   marketAddress: marketInfo.marketTokenAddress,
-    //   allowedSlippage: 50,
-    //   collateralToken: collateralTokenData,
-    //   collateralTokenAddress: collateralToken,
-    //   receiveTokenAddress: collateralToken,
-    //   fromToken: tokensData["0x912CE59144191C1204E64559FE8253a0e49E6548"],
-    //   marketInfo,
-    //   indexToken: marketInfo.indexToken,
-    //   increaseAmounts: {
-    //     initialCollateralAmount: 3000000n,
-    //     initialCollateralUsd: 2999578868393486100000000000000n,
-    //     collateralDeltaAmount: 2997003n,
-    //     collateralDeltaUsd: 2996582289103961007386100000000n,
-    //     indexTokenAmount: 1919549334876037n,
-    //     sizeDeltaUsd: 1679226208729489045987200000000n,
-    //     sizeDeltaInTokens: 1919536061202302n,
-    //     estimatedLeverage: 20000n,
-    //     indexPrice: 3122169600000000000000000000000000n,
-    //     initialCollateralPrice: 999859622797828700000000000000n,
-    //     collateralPrice: 999859622797828700000000000000n,
-    //     triggerPrice: 0n,
-    //     acceptablePrice: 3122191190655414690893787784152819n,
-    //     acceptablePriceDeltaBps: 0n,
-    //     positionFeeUsd: 2996579289525092613900000000n,
-    //     swapPathStats: undefined,
-    //     uiFeeUsd: 0n,
-    //     swapUiFeeUsd: 0n,
-    //     feeDiscountUsd: 0n,
-    //     borrowingFeeUsd: 0n,
-    //     fundingFeeUsd: 0n,
-    //     externalSwapQuote: undefined,
-    //     positionPriceImpactDeltaUsd: 41444328240807630917223064n,
-    //   },
-    // });
+
    const { marketsInfoData } = await sdk.markets.getMarketsInfo();
 
-   let marketInfo = marketsInfoData["0x47c031236e19d024b42f8AE6780E44A573170703"];
+   // Add this debug log to verify market selection
+   console.log("Available markets:", marketsInfoData ? Object.keys(marketsInfoData) : []);
+   const ETH_USDC_MARKET = "0x70d95587d40A2caf56bd97485aB3Eec10Bee6336";
+   let marketInfo = marketsInfoData ? marketsInfoData[ETH_USDC_MARKET] : undefined;
+
+   if (!marketInfo) {
+       throw new Error("ETH/USDC market not found");
+   }
+
+   // Verify it's the right market
+   console.log("Market name:", marketInfo.name);
+   console.log("Index token:", marketInfo.indexToken.symbol);
+
    const collateralToken = tokensData["0xaf88d065e77c8cC2239327C5EDb3A432268e5831"];
    
   //////////////////////////////////////////////////////////////////
@@ -236,7 +200,7 @@ export async function shortIt() {
       const sizeInUsd = formatUnits(position.sizeInUsd, USD_DECIMALS);
       const collateralTokenName =
         tokensData?.[position.collateralTokenAddress].name;
-         
+
   
       const price = getMarkPrice({
         prices: marketInfo.indexToken.prices,
@@ -259,88 +223,107 @@ export async function shortIt() {
   console.log(positionsArray)
     //////////////////////////////////////////////////////////////////
 
+    // 1. Set up basic parameters
+    const COLLATERAL_AMOUNT_USDC = 3n * 10n**6n; // 3 USDC (USDC has 6 decimals)
+    const LEVERAGE = 4n; // 1x leverage
+    const ALLOWED_SLIPPAGE_BPS = 50n; // 0.5%
+
+    // 2. Get current prices and calculate USD values
+    const indexPrice = marketInfo.indexToken.prices.maxPrice; // For shorts use maxPrice, for longs use minPrice
+    const collateralPrice = collateralToken.prices.minPrice;
+
+    // 3. Calculate position values
+    const initialCollateralUsd = (COLLATERAL_AMOUNT_USDC * collateralPrice) / 10n**6n; // Convert to 30 decimals
+    const sizeDeltaUsd = initialCollateralUsd * LEVERAGE;
+
+    // 4. Calculate acceptable price with slippage
+    const slippageMultiplier = 10000n - ALLOWED_SLIPPAGE_BPS; // Subtract for shorts, add for longs
+    const acceptablePrice = (indexPrice * slippageMultiplier) / 10000n;
+
+    // 5. Calculate execution fee (0.01 ETH or as needed)
+    const executionFee = parseEther("0.01");
+
+    // Now create the order with calculated values
     sdk.orders.createIncreaseOrder({
       // Market data from GMX SDK
       marketsInfoData: marketsInfoData!,
       tokensData,
-      
       // Order type flags
-      isLimit: false,  // Market order = false, Limit order = true
-      isLong: false,   // Long = true, Short = false
+      isLimit: false, // Market order = false, Limit order = true
+      isLong: false,  // Long = true, Short = false
       
       // Market address from marketsInfoData
-      marketAddress: marketInfo.marketTokenAddress,  // e.g., ETH/USDC market address
-      
-      // Slippage tolerance in basis points (1 = 0.01%)
-      allowedSlippage: 50,  // 0.5% slippage allowed
-      
-      // Collateral token information
+      marketAddress: marketInfo.marketTokenAddress,
+      // Slippage tolerance in basis points (1 = 0.01%)   // e.g., ETH/USDC market address
+      allowedSlippage: Number(ALLOWED_SLIPPAGE_BPS),
+       // Collateral token information
       collateralToken,  // Token object from tokensData
-      collateralTokenAddress: collateralToken.address,  // Address of collateral token (e.g., USDC)
-      receiveTokenAddress: collateralToken.address,     // Same as collateral for simple positions
-      
+      collateralTokenAddress: collateralToken.address,    // Address of collateral token (e.g., USDC)
+      receiveTokenAddress: collateralToken.address,        // Address of receive token (same as collateral token)
+
       // Token you're starting with (if different from collateral, will be swapped)
-      fromToken: tokensData["0x912CE59144191C1204E64559FE8253a0e49E6548"],
-      
-      // Market and index token info
+      fromToken: collateralToken,
+      // Market information
       marketInfo,  // Market object from marketsInfoData
+      // Index token information
       indexToken: marketInfo.indexToken,  // Token being traded (e.g., ETH for ETH/USDC)
-    
+      // Increase amounts
       increaseAmounts: {
-        // Initial collateral amount in token decimals (e.g., 6 for USDC)
-        initialCollateralAmount: 3000000n,  // 3 USDC = 3_000_000
-        
-        // Initial collateral converted to USD (30 decimals)
+         // Initial collateral amount in token decimals (e.g., 6 for USDC)
+        initialCollateralAmount: COLLATERAL_AMOUNT_USDC,
+
+         // Initial collateral converted to USD (30 decimals)
         // Calculate: initialCollateralAmount * collateralPrice * 10^(30-tokenDecimals)
-        initialCollateralUsd: 2999578868393486100000000000000n,
-        
-        // Actual collateral amount after fees
-        collateralDeltaAmount: 2997003n,
-        
+        initialCollateralUsd,
+
+         // Actual collateral amount after fees
+        collateralDeltaAmount: COLLATERAL_AMOUNT_USDC,
+
         // Actual collateral in USD after fees (30 decimals)
-        collateralDeltaUsd: 2996582289103961007386100000000n,
-        
+        collateralDeltaUsd: initialCollateralUsd,
+
         // Amount of index token being traded (token decimals)
         // Calculate: sizeDeltaUsd / indexPrice
-        indexTokenAmount: 1919549334876037n,
-        
+        indexTokenAmount: sizeDeltaUsd / indexPrice,
+
         // Position size in USD (30 decimals)
         // Calculate: collateralAmount * leverage * 10^30
-        sizeDeltaUsd: 5993158579050185227800000000000n,
-        
-        // Position size in tokens
-        sizeDeltaInTokens: 1919536061202302n,
-        
+        sizeDeltaUsd,
+
+        // Position size in tokens (token decimals)
+        // Calculate: sizeDeltaUsd / indexPrice
+        sizeDeltaInTokens: sizeDeltaUsd / indexPrice,
+
+        // Estimated leverage (BPS)
+        // Calculate: leverage * 10000
         // Leverage * 10000 (2x = 20000)
-        estimatedLeverage: 20000n,
+        estimatedLeverage: LEVERAGE * 10000n,
         
         // Current index price (30 decimals)
         // Get from: marketInfo.indexToken.prices
-        indexPrice: 3122169600000000000000000000000000n,
-        
+        indexPrice,
+
         // Collateral token prices (30 decimals)
-        initialCollateralPrice: 999859622797828700000000000000n,
-        collateralPrice: 999859622797828700000000000000n,
-        
+        initialCollateralPrice: collateralPrice,
+        collateralPrice,
+
         // For market orders = 0
         triggerPrice: 0n,
-        
-        // Maximum acceptable price for the trade
-        // For longs: indexPrice * (1 + allowedSlippage)
-        // For shorts: indexPrice * (1 - allowedSlippage)
-        acceptablePrice: 3122191190655414690893787784152819n,
-        
-        // Additional required fields with default values
+
+        // Acceptable price (30 decimals)
+        acceptablePrice,
+
+        // Acceptable price delta (BPS)
         acceptablePriceDeltaBps: 0n,
-        positionFeeUsd: 2996579289525092613900000000n,
+        positionFeeUsd: 0n, // Will be calculated by GMX
         swapPathStats: undefined,
         uiFeeUsd: 0n,
         swapUiFeeUsd: 0n,
         feeDiscountUsd: 0n,
         borrowingFeeUsd: 0n,
         fundingFeeUsd: 0n,
-        positionPriceImpactDeltaUsd: 41444328240807630917223064n,
-        externalSwapQuote: undefined  // Required field, can be undefined
+        positionPriceImpactDeltaUsd: 0n,
+        externalSwapQuote: undefined
       },
     });
 
@@ -350,47 +333,156 @@ export async function shortIt() {
     throw new Error(`Order creation failed: ${error.message || error}`);
   }
 
-  // await sdk.orders.createDecreaseOrder({
-  //   allowedSlippage: 50,
-  //   collateralToken: collateralToken,
-  //   marketInfo,
-  //   marketsInfoData,
-  //   decreaseAmounts: {
-  //     isFullClose: true,
-  //     sizeDeltaUsd: position.sizeInUsd,
-  //     sizeDeltaInTokens: position.sizeInTokens,
-  //     collateralDeltaUsd: estimatedCollateralUsd,
-  //     collateralDeltaAmount: position.collateralAmount,
-  //     indexPrice: 0n,
-  //     collateralPrice: 0n,
-  //     triggerPrice: stopLossPrice,
-  //     acceptablePrice: stopLossPrice,
-  //     acceptablePriceDeltaBps: 0n,
-  //     recommendedAcceptablePriceDeltaBps: 0n,
-  //     estimatedPnl: 0n,
-  //     estimatedPnlPercentage: 0n,
-  //     realizedPnl: 0n,
-  //     realizedPnlPercentage: 0n,
-  //     positionFeeUsd: 0n,
-  //     uiFeeUsd: 0n,
-  //     swapUiFeeUsd: 0n,
-  //     feeDiscountUsd: 0n,
-  //     borrowingFeeUsd: 0n,
-  //     fundingFeeUsd: 0n,
-  //     swapProfitFeeUsd: 0n,
-  //     positionPriceImpactDeltaUsd: 0n,
-  //     priceImpactDiffUsd: 0n,
-  //     payedRemainingCollateralAmount: 0n,
-  //     payedOutputUsd: 0n,
-  //     payedRemainingCollateralUsd: 0n,
-  //     receiveTokenAmount: 0n,
-  //     receiveUsd: 0n,
-  //     decreaseSwapType: DecreasePositionSwapType.NoSwap,
-  //     triggerOrderType: OrderType.StopLossDecrease,
-  //     // triggerThresholdType
-  //   },
-  //   isLong: position.isLong,
-  //   tokensData,
-  // });
+}
+
+export async function closeShort() {
+  try {
+    console.log("Attempting to close short position...");
+    
+    // 1. Get market info and tokens data
+    const { marketsInfoData, tokensData } = await sdk.markets.getMarketsInfo();
+    if (!marketsInfoData || !tokensData) {
+      throw new Error("Failed to get markets info");
+    }
+
+    // 2. Get positions from the GMX SDK
+    const positions = await sdk.positions.getPositions({
+      marketsData: marketsInfoData,
+      tokensData: tokensData,
+    });
+
+    const positionsArray = Object.values(positions.positionsData || {});
+    if (!positionsArray.length) {
+      throw new Error("No positions found to close");
+    }
+
+    // 3. Get the first position (index 0) to close
+    const position = positionsArray[0];
+    console.log("Closing position:", position);
+    
+    // Log position details for verification
+    const marketInfo = marketsInfoData[position.marketAddress];
+    if (!marketInfo) {
+      throw new Error("Market info not found for position");
+    }
+    
+    console.log(`Closing ${position.isLong ? "Long" : "Short"} position of ${formatUnits(position.sizeInUsd, 30)} USD on ${marketInfo.name}`);
+    
+    // 4. Get collateral token info
+    const collateralToken = tokensData[position.collateralTokenAddress];
+    if (!collateralToken) {
+      throw new Error("Collateral token not found");
+    }
+    
+    // 5. Determine acceptable price for closing
+    const ALLOWED_SLIPPAGE_BPS = 50n; // 0.5%
+    
+    // Get price based on position type - IMPORTANT: reversed for closing!
+    const prices = marketInfo.indexToken.prices;
+    
+    // When closing shorts, we want the MAX price (worst case)
+    // When closing longs, we want the MIN price (worst case)
+    const indexPrice = position.isLong ? prices.minPrice : prices.maxPrice;
+    
+    // Calculate acceptable price with slippage - IMPORTANT: reversed for closing!
+    // For shorts: add slippage to accept higher price
+    // For longs: subtract slippage to accept lower price
+    const slippageMultiplier = position.isLong 
+      ? 10000n - ALLOWED_SLIPPAGE_BPS  
+      : 10000n + ALLOWED_SLIPPAGE_BPS;
+    
+    const acceptablePrice = (indexPrice * slippageMultiplier) / 10000n;
+    
+    console.log(`Position index price: ${formatUnits(indexPrice, 30)}`);
+    console.log(`Acceptable price: ${formatUnits(acceptablePrice, 30)}`);
+    
+    // 6. Calculate execution fee (0.01 ETH)
+    const executionFee = parseEther("0.01");
+    
+    // 7. Properly construct the decrease order
+    console.log("Creating decrease order to close position...");
+    
+    // Import the required enums from the GMX SDK
+    const OrderType = {
+      MarketSwap: 0,
+      LimitSwap: 1,
+      MarketIncrease: 2,
+      LimitIncrease: 3,
+      MarketDecrease: 4,
+      LimitDecrease: 5,
+      StopLossDecrease: 6,
+      Liquidation: 7,
+    };
+    
+    const DecreasePositionSwapType = {
+      NoSwap: 0,
+      SwapPnlTokenToCollateralToken: 1,
+      SwapCollateralTokenToPnlToken: 2,
+    };
+    
+    // Calculate collateral delta
+    const collateralDeltaUsd = convertToUsd(
+      position.collateralAmount,
+      collateralToken.decimals,
+      collateralToken.prices.minPrice
+    );
+    
+    // Create the decrease order with correct parameters
+    await sdk.orders.createDecreaseOrder({
+      marketsInfoData,
+      tokensData,
+      marketInfo,
+      isLong: position.isLong,
+      allowedSlippage: Number(ALLOWED_SLIPPAGE_BPS),
+      collateralToken,
+      decreaseAmounts: {
+        isFullClose: true,
+        
+        // Position size and collateral info - must match position exactly
+        sizeDeltaUsd: position.sizeInUsd,
+        sizeDeltaInTokens: position.sizeInTokens,
+        collateralDeltaUsd: collateralDeltaUsd || 0n,
+        collateralDeltaAmount: position.collateralAmount,
+        
+        // Price info
+        indexPrice,
+        collateralPrice: collateralToken.prices.minPrice,
+        triggerPrice: 0n, // Market order
+        acceptablePrice,
+        
+        // Required parameters - will be calculated by GMX
+        acceptablePriceDeltaBps: 0n,
+        recommendedAcceptablePriceDeltaBps: 0n,
+        estimatedPnl: position.pnl || 0n,
+        estimatedPnlPercentage: 0n,
+        realizedPnl: 0n,
+        realizedPnlPercentage: 0n,
+        positionFeeUsd: 0n,
+        uiFeeUsd: 0n,
+        swapUiFeeUsd: 0n,
+        feeDiscountUsd: 0n,
+        borrowingFeeUsd: position.pendingBorrowingFeesUsd || 0n,
+        fundingFeeUsd: 0n,
+        swapProfitFeeUsd: 0n,
+        positionPriceImpactDeltaUsd: 0n,
+        priceImpactDiffUsd: 0n,
+        payedRemainingCollateralAmount: 0n,
+        payedOutputUsd: 0n,
+        payedRemainingCollateralUsd: 0n,
+        receiveTokenAmount: 0n,
+        receiveUsd: 0n,
+        
+        // Enum values
+        decreaseSwapType: DecreasePositionSwapType.NoSwap,
+        triggerOrderType: OrderType.MarketDecrease,
+      },
+    });
+    
+    console.log("Position close order created successfully");
+    
+  } catch (error) {
+    console.error("Failed to close position:", error);
+    throw new Error(`Position close failed: ${error.message || error}`);
+  }
 }
 

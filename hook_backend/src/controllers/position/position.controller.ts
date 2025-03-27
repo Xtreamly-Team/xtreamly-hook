@@ -3,7 +3,7 @@ import { PositionService } from '@modules/position/services/position/position.se
 import { AuthUser, UserContext } from '@modules/auth/guards/auth.guard';
 import { PositionResponseDto } from '@modules/position/dto/position.dto/position.dto';
 import {GMX} from "@app/utils/GMX";
-import {shortIt} from "@app/utils/gmx_create_order";
+import {shortIt, closeShort} from "@app/utils/gmx_create_order";
 
 @Controller('position')
 export class PositionController {
@@ -33,5 +33,10 @@ export class PositionController {
   async testGMXCreateOrder(): Promise<any> {
     // const privateKey = user.firebaseUser.private;
     await shortIt();
+  }
+
+  @Get('/gmx-close-short')
+  async testGMXCloseShort(): Promise<any> {
+    await closeShort();
   }
 }
