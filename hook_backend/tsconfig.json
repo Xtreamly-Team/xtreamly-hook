@@ -34,6 +34,8 @@
       "abis": ["src/gmx_sdk/abis/index"],
       "index": ["src/gmx_sdk/index"],
       "@gmx_sdk": ["src/gmx_sdk/index"],
+      "@gmx": ["src/gmx_sdk"],
+      "@gmx/utils": ["src/gmx_sdk/utils"]
     }
   }
 }
