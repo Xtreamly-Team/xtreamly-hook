@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { HeartbeatModule } from './modules/heartbeat/heartbeat.module';
 
 import { AppService } from './app.service';
 import { UserController } from './controllers/user/user.controller';
@@ -29,6 +30,7 @@ import { AuthModule } from '@modules/auth/auth.module';
       http: process.env.NODE_ENV !== 'production',
     }),
     ScheduleModule.forRoot(),
+    HeartbeatModule,
     QuoteComputeModule,
     UpdateUserPositionModule,
     XtrV4UniHookModule,
