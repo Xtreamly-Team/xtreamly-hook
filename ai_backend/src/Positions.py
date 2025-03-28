@@ -25,3 +25,18 @@ class Positions:
             "status": 'active'
         }
         return pd.read_sql(sql, self.engine, params=params)
+
+    def get_gmx_positions(self, user_id: str):
+        sql = 'SELECT * FROM positions WHERE "userId" = %(userId)s AND "gmxPositionId" is not null'
+        params = {
+            "userId": user_id
+        }
+        return pd.read_sql(sql, self.engine, params=params)
+
+    def get_active_lp_positions(self, user_id: str):
+        sql = 'SELECT * FROM positions WHERE "userId" = %(userId)s AND "uniswapPositionId" is not null AND "status" = %(status)s'
+        params = {
+            "userId": user_id,
+            "status": 'active'
+        }
+        return pd.read_sql(sql, self.engine, params=params)
