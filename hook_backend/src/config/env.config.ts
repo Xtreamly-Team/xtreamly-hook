@@ -21,10 +21,14 @@ export const env = cleanEnv(process.env, {
   API_KEY: str({
     desc: 'The allowed API KEY.'
   }),
-  // Database
-  DB_HOST: str({ 
+  DB_HOST: str({
     desc: 'PostgreSQL host',
     default: 'localhost'
+  }),
+  // Database
+  AI_BACKEND_URL: str({
+    desc: 'The AI backend url',
+    default: 'http://localhost:8001'
   }),
   DB_PORT: port({ 
     default: 5432, 
