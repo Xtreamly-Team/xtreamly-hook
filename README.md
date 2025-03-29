@@ -8,6 +8,8 @@ Xtreamly Hook represents a paradigm shift in liquidity provision for decentraliz
 
 The platform enables users to deposit into custom-designed hooks that continuously monitor position exposure and automatically hedge on GMX, creating sophisticated risk-managed positions previously available only to professional market makers.
 
+Our WIP Video Demo can be found here: https://drive.google.com/drive/folders/19ZEPnF2kHbKuaMvfPg6Lu8o0rlphhHBF?usp=sharing
+
 ## Project Progress
 
 - **Backend Infrastructure**: Built a robust NestJS backend with TimescaleDB integration, enabling high-performance time-series data processing for position tracking and analysis.
@@ -241,3 +243,13 @@ Our current development focus is on:
 4. Expanding the range of supported trading pairs
 5. Enhancing the position monitoring analytics suite
 6. Implementing advanced risk management features for extreme market conditions
+
+## WIP: 
+- Improved and tested hook.
+- Eventlistener to our Hook
+- Refactored and improved hook_backend
+- Improved Error Handling
+- Frontend Integration
+- ai_backend integration into hook_backend
+- ...
+
