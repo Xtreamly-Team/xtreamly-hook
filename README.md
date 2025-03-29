@@ -2,6 +2,8 @@
 
 A sophisticated liquidity management system that leverages Uniswap v4's hook architecture to create delta-neutral positions via intelligent hedging strategies.
 
+## [DEMO VIDEO](https://drive.google.com/file/d/1ffZUCHkBY_Mea2sLJXF0h-1mqTsPMB4o/view)
+
 ## Overview
 
 ![architecture.png](./docs/architecture.png)
@@ -10,7 +12,6 @@ Xtreamly Hook represents a paradigm shift in liquidity provision for decentraliz
 
 The platform enables users to deposit into custom-designed hooks that continuously monitor position exposure and automatically hedge on GMX, creating sophisticated risk-managed positions previously available only to professional market makers.
 
-Our WIP Video Demo can be found here: https://drive.google.com/drive/folders/19ZEPnF2kHbKuaMvfPg6Lu8o0rlphhHBF?usp=sharing
 
 ## Project Progress
 
