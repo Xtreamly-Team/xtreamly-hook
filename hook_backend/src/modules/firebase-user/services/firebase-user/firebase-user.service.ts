@@ -10,10 +10,11 @@ export class FirebaseUser {
 export class FirebaseUserService {
   constructor() {
     const firebaseCreds = JSON.parse(process.env.FIREBASE_CREDENTIALS as string);
-    admin.initializeApp({
-      credential: admin.credential.cert(firebaseCreds),
-    });
-
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(firebaseCreds),
+      });
+    }
   }
 
   async findByWalletAddress(walletAddress: string): Promise<FirebaseUser> {

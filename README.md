@@ -4,6 +4,8 @@ A sophisticated liquidity management system that leverages Uniswap v4's hook arc
 
 ## Overview
 
+![architecture.png](./docs/architecture.png)
+
 Xtreamly Hook represents a paradigm shift in liquidity provision for decentralized exchanges. By intercepting key liquidity events through Uniswap v4's hook architecture and connecting them with hedging venues like GMX, Opyn (TBD) the system creates delta-neutral strategies that maximize fee generation while protecting against impermanent loss.
 
 The platform enables users to deposit into custom-designed hooks that continuously monitor position exposure and automatically hedge on GMX, creating sophisticated risk-managed positions previously available only to professional market makers.

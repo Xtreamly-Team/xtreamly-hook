@@ -14,12 +14,16 @@ export class UserService {
     return user;
   }
 
+  async getUsers(): Promise<User[]> {
+    return this.userRepository.find();
+  }
+
   async registerUser(walletAddress: string, email?: string): Promise<User> {
     const existingUser = await this.userRepository.findByWalletAddress(walletAddress);
     if (existingUser) {
       return existingUser;
     }
-    
+
     return this.userRepository.createUser(walletAddress, email);
   }
 
