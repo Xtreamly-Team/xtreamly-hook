@@ -32,27 +32,6 @@
 \medskip
 \begin{multicols}{2}
 
-
-\section{Introduction}
-\label{sec:introduction}
-
-Concentrated liquidity provision, as introduced by Uniswap V3 and refined in V4, has revolutionized decentralized trading by allowing liquidity providers to efficiently allocate capital across chosen price ranges. However, despite improvements in capital efficiency, liquidity providers remain highly exposed to downturn losses.
-
-\smallskip
-We have built and tested a hedging strategy that utilizes GMX perpetual futures combined with Xtreamly’s proprietary volatility forecasts to systematically reduce downside exposure while preserving the upside potential of Uniswap liquidity positions. Our method dynamically initiates short perpetual exposure to counteract market risk, aiming to protect and deliver net improvement in returns.
-
-\smallskip
-We have analyzed 1,385 historical Uniswap V3 positions with over \$190 million in deposited liquidity analyzed during the 4-month back-testing period (2024-12-01 to 2025-03-25), across ETHUSDT, WBTCUSDT, and WBTCUSDC pools. Here are key results:
-
-\begin{itemize}
-	\item \textbf{Profit Improvement:} On aggregate level, over \$1.31 million in additional value was recovered across the Uniswap liquidity positions when applying the hedging strategy.
-	\item \textbf{Hedging Efficiency:} Each LP was hedged 3–4 times on average, demonstrating dynamic market adaptation while limiting hedging costs of 5\% of position value.
-	\item \textbf{Avoided Liquidations:} Less than 1.2\% of all perpetuals were liquidated, confirming safety of leverage driven by Xtreamly forecasts.
-\end{itemize}
-
-\smallskip
-This evaluation demonstrates that integrating predictive volatility analytic with derivative hedging is not only viable but materially beneficial for DeFi liquidity providers. Next, we will expose in detail the hedging mechanism.
-
 \section{Hedging Framework}
 \label{sec:hedging}
 

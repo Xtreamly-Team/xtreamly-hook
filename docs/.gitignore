@@ -8,3 +8,13 @@ main.pdf
 main.synctex.gz
 
 *.pyc
+*.log
+*.bib
+*.gz
+*.bcf
+*.bbl
+*.aux
+*.bbl
+*.blg
+*.xml
+*.aux
