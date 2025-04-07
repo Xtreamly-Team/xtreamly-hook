@@ -45,18 +45,19 @@ We have built and tested a hedging strategy that utilizes GMX perpetual futures 
 We have analyzed 1,385 historical Uniswap V3 positions with over \$190 million in deposited liquidity analyzed during the 4-month back-testing period (2024-12-01 to 2025-03-25), across ETHUSDT, WBTCUSDT, and WBTCUSDC pools. Here are key results:
 
 \begin{itemize}
-	\item \textbf{Profit Improvement:} On aggregate level, over \$1.31 million in additional value was recovered across the Uniswap liquidity positions when applying the hedging strategy. When standardized performance of each position to annualized yield (APY) the median improvement with hedging is 30.87\%.
+	\item \textbf{Profit Improvement:} On aggregate level, over \$1.31 million in additional value was recovered across the Uniswap liquidity positions when applying the hedging strategy. When standardized performance of each position the annualized yield (APY) the median improvement with hedging is 30.87\% APY (across all tested positions).
 	\item \textbf{Hedging Efficiency:} Each LP was hedged 3–4 times on average, demonstrating dynamic market adaptation while limiting hedging costs of 5\% of position value.
-	\item \textbf{Avoided Liquidations:} Less than 1.2\% of all perpetuals were liquidated, confirming safety of leverage driven by Xtreamly forecasts.
+	\item \textbf{Avoided Liquidations:} Less than 1.2\% of all perpetuals were liquidated. This is due to safe leverage levels optimized with Xtreamly AI. Thanks to Xtreamly volatility we managed the risk appetite and avoid early liquidations which can occur with perpetuals trading.
 \end{itemize}
 
 \smallskip
 This evaluation demonstrates that integrating predictive volatility analytic with derivative hedging is not only viable but materially beneficial for DeFi liquidity providers. Next, we will expose in detail the hedging mechanism.
 
+\newpage
 \section{Hedging Framework}
 \label{sec:hedging}
 
-We propose a hedging mechanism applicable to Uniswap V4 \& V3 \textit{liquidity provider} (LP) positions with GMX perpetual futures to reduce risk and enhance performance. This section outlines key components of the strategy: the Uniswap LP position, the GMX perpetual futures contract, and Xtreamly’s volatility forecasting component.
+This section outlines key components of the strategy: the Uniswap LP position, the GMX perpetual futures contract, and Xtreamly’s volatility forecasting component.
 
 \subsection{Uniswap LP Position}
 \label{sec:uniswaplp}
@@ -396,6 +397,9 @@ The property of avoiding liquidations has been achieved with healthy levels of l
 \label{fig:BarClosePerpetuals}
 \justifying
 
+\bigskip
+\bigskip
+\bigskip
 \columnbreak
 \subsubsection{Hedging Examples}
 
@@ -444,6 +448,9 @@ The property of avoiding liquidations has been achieved with healthy levels of l
 \textbf{Payoff Value}: The expected return of hedged position is greater than original position for full scope of price scenarios. 
 
 \bigskip
+\bigskip
+\bigskip
+
 \section{DeFi Implementation}
 
 \subsection{Hook Deployment}
