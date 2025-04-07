@@ -27,7 +27,7 @@
 \maketitle
 
 \begin{abstract}
-	This paper explores the use of perpetual futures to hedge Uniswap V4 and V3 concentrated liquidity positions. By integrating short perpetual strategies with Xtreamly’s volatility predictions, liquidity providers can mitigate impermanent loss and potentially profit from price fluctuations. We analyze the effects of volatility forecasts, leverage, funding costs, and liquidation risks on effective risk management. Finally, we apply the hedging strategy to historical LP positions and evaluate its potential to improve the past performance.
+	This paper explores the use of perpetual futures to hedge Uniswap V4 and V3 concentrated liquidity positions. By integrating short perpetual strategies with Xtreamly’s volatility predictions, liquidity providers can mitigate impermanent loss and potentially profit from price fluctuations. We analyze the effects of volatility forecasts, leverage, funding costs, and liquidation risks on effective risk management. Finally, we apply the hedging strategy to historical LP positions and evaluate its potential to substantially improve the past performance.
 \end{abstract}
 \medskip
 \begin{multicols}{2}
@@ -45,7 +45,7 @@ We have built and tested a hedging strategy that utilizes GMX perpetual futures 
 We have analyzed 1,385 historical Uniswap V3 positions with over \$190 million in deposited liquidity analyzed during the 4-month back-testing period (2024-12-01 to 2025-03-25), across ETHUSDT, WBTCUSDT, and WBTCUSDC pools. Here are key results:
 
 \begin{itemize}
-	\item \textbf{Profit Improvement:} On aggregate level, over \$1.31 million in additional value was recovered across the Uniswap liquidity positions when applying the hedging strategy.
+	\item \textbf{Profit Improvement:} On aggregate level, over \$1.31 million in additional value was recovered across the Uniswap liquidity positions when applying the hedging strategy. When standardized performance of each position to annualized yield (APY) the median improvement with hedging is 30.87\%.
 	\item \textbf{Hedging Efficiency:} Each LP was hedged 3–4 times on average, demonstrating dynamic market adaptation while limiting hedging costs of 5\% of position value.
 	\item \textbf{Avoided Liquidations:} Less than 1.2\% of all perpetuals were liquidated, confirming safety of leverage driven by Xtreamly forecasts.
 \end{itemize}
@@ -338,10 +338,12 @@ These parameters follow the intuitions: the holding time cannot be too extensive
 
 Takeaways:
 \begin{itemize}
-	\item \textbf{\% Returns LP Positions}: In most of pools positions had on average negative return performance due to experienced IL.
-	\item \textbf{\% Improvement with Hedging}: In almost all pools we identified average positive improvement with hedging, which adds up in total of 1,313k USD in extra profit. 
-	\item \textbf{\# Perpetuals}: On average each LP position was hedged 3-4 times, stating dynamic nature of hedging within LP position lifetime.
+	\item \textbf{Average Returns of LP Positions}: Most pools exhibited negative average returns, ranging from -3.40\% (WBTC/USDC, 0.05\% fee) to -0.906\% (WBTC/USDT, 0.30\% fee). This underperformance is primarily attributed to impermanent loss (IL), a common challenge for LP positions in volatile markets.
+	\item \textbf{Average Return Improvement with Hedging}: Hedging consistently improved returns across nearly all pools, with improvements ranging from 0.4\% (WBTC/USDC, 0.05\% fee) up to 1.0\% (ETH/USDT, 0.30\% fee). Collectively, this translated to an additional profit of 1,313k USD across all positions, underscoring the effectiveness of the hedging strategy.
+	\item \textbf{Median APY Improvement with Hedging}: The median annual percentage yield (APY) improvement across all pools was approximately 30.87\%. Notably, the WBTC/USDC pool at a 0.300\% fee tier achieved the highest median APY improvement of 60.68\%, while the WBTC/USDC pool at a 0.05\% fee tier showed the lowest at 9.88\%. 
+	\item \textbf{Average Number of Perpetual Futures per Position}: On average, each LP position was hedged 3 to 4 times during its lifetime, with values ranging from 3.15 (WBTC/USDT, 0.05\% fee) to 4.38 (ETH/USDT, 0.05\% fee). This frequency reflects the dynamic nature of the hedging strategy, which adjusts to market conditions to mitigate IL.
 \end{itemize}
+
 
 \centering
 \includegraphics[width=\columnwidth]{img/HistogramPerformance}

@@ -523,17 +523,42 @@ df_hedge_pos.to_csv(os.path.join(folder, f'df_hedge_pos.csv'), index=False)
 df_perps_all.to_csv(os.path.join(folder, f'df_perps_all.csv'), index=False)
 
 # =============================================================================
+# Read
+# =============================================================================
+df_hedge_pos = pd.read_csv(os.path.join(f'{folder}', 'df_hedge_pos.csv'))
+df_perps_all = pd.read_csv(os.path.join(f'{folder}', 'df_perps_all.csv'))
+
+# =============================================================================
 # # Aggr Stats
 # =============================================================================
 df_pools['ids'] = [df_hedge_pos[df_hedge_pos['pool']==pool]['position_id'].nunique() 
                     for pool in df_pools['pool'].unique()]
+
+df_log['v'] = df_log[['deposited_token1', 'withdrawn_token1', 'collected_fees_token1']].sum(axis=1).fillna(.0) + \
+    df_log[['deposited_token0', 'withdrawn_token0', 'collected_fees_token0']].sum(axis=1).fillna(.0)*df_log['price']
+df_pos_in = df_log[df_log['type'].isin(['deposits'])].groupby('position_id').agg(
+    {'v': 'sum',}).reset_index(drop=False).rename(columns={'v': 'pos_in'})
+df_pos_out = df_log[df_log['type'].isin(['withdrawals', 'claimed-fees'])].groupby('position_id').agg(
+    {'v': 'sum',}).reset_index(drop=False).rename(columns={'v': 'pos_out'})
+df_hedge_pos = df_hedge_pos.merge(df_pos_in, on='position_id', how='left')
+df_hedge_pos = df_hedge_pos.merge(df_pos_out, on='position_id', how='left')
+
+df_hedge_pos['pos_ret'] = df_hedge_pos['pos_out']/df_hedge_pos['pos_in']-1
+df_hedge_pos['pos_hold'] = pd.to_datetime(df_hedge_pos['position_t_max']) - pd.to_datetime(df_hedge_pos['position_t_min'])   
+df_hedge_pos['pos_hold'] = df_hedge_pos['pos_hold'].dt.total_seconds()/(60*60*24)
+df_hedge_pos['pos_apy'] = (1+df_hedge_pos['pos_ret'])**(365/df_hedge_pos['pos_hold'])-1
+df_hedge_pos['hedged_apy_impr'] = (1+df_hedge_pos['hedged_perc_impr'])**(365/df_hedge_pos['pos_hold'])-1
+print(df_hedge_pos['hedged_apy_impr'].quantile(.5))
+
 df_hedge_agr = df_hedge_pos.groupby([ 'pool']).agg(
         position_id = ('position_id','count'),
         position_perc_active=('position_perc_active', 'mean'),
         position_perc_ret=('position_perc_ret', 'mean'),
         position_usd_inv = ('position_usd_inv','sum'),
+        position_apy = ('pos_apy', lambda x: x.quantile(0.5)),
         hedged_perc_impr=('hedged_perc_impr', 'mean'),
         hedged_perc_ret = ('hedged_perc_ret','mean'),
+        hedged_apy_impr = ('hedged_apy_impr', lambda x: x.quantile(0.5)),
         perp_ret = ('perp_ret','mean'),
         perp_count = ('perp_count','mean'),
         ).reset_index()
@@ -572,9 +597,17 @@ color_menu = tailwind['stone-800']
 def _tbl(*arg):
     ax.axis('tight')
     ax.axis('off')
+    
+    # Create the table
     table = ax.table(cellText=df.values, 
                      colLabels=df.columns, 
                      cellLoc='center', loc='center')
+    
+    # Estimate column widths based on character length
+    col_widths = [max(df[col].astype(str).map(len).max(), len(col))+20 for col in df.columns]
+    total_width = sum(col_widths)
+    norm_col_widths = [w / total_width for w in col_widths]
+
     for (row, col), cell in table.get_celld().items():
         cell.set_edgecolor(tailwind['stone-200'])
         cell.set_linewidth(1)
@@ -583,6 +616,10 @@ def _tbl(*arg):
             cell.set_height(.25)
             cell.set_text_props(weight='semibold', color='white')
             cell.set_facecolor(color_menu)
+        # Set column width
+        if col < len(norm_col_widths):
+            cell.set_width(norm_col_widths[col])
+
     table.auto_set_font_size(False)
     table.set_fontsize(10)
     fig.tight_layout(rect=[0.004, 0.004, .996, .996])
@@ -612,7 +649,7 @@ for c in df.columns:
 fig = _tbl()
 fig.savefig(os.path.join(folder, f'TblPools.png'), bbox_inches='tight', dpi=300)
 
-fig, ax = plt.subplots(figsize=(9, 3.5))
+fig, ax = plt.subplots(figsize=(11, 4))
 color_menu = tailwind['indigo-700']
 df = df_hedge_agr.copy()
 df['fee'] /= 10000
@@ -621,8 +658,9 @@ cols_perp = {
     'fee': '% Fee',
     'position_id': '# LP positions',
     'position_perc_ret': '% Avg. Return\n LP position',
-    'hedged_perc_impr': '% Avg. Improve\n with Hedging',    
-    'perp_count': '# Avg. Perp. \n with Hedging',    
+    'hedged_perc_impr': '% Avg. Return\n Improve with Hedging',    
+    'hedged_apy_impr': '% Median. APY\n Improve with Hedging',    
+    'perp_count': '# Avg. Perp. Opened \n with Hedging',    
     }
 df = df[cols_perp.keys()].rename(columns=cols_perp)
 for c in df.columns:
@@ -633,7 +671,7 @@ for c in df.columns:
 fig = _tbl()
 fig.savefig(os.path.join(folder, f'TblHedge.png'), bbox_inches='tight', dpi=300)
 
-fig, ax = plt.subplots(figsize=(9, 2))
+fig, ax = plt.subplots(figsize=(9, 3))
 color_menu = tailwind['indigo-600']
 print("${:,.0f}".format(df_perp_agr['perp_pnl'].sum()+df_perp_agr['collateral'].sum()))
 df = df_perp_agr.copy()
@@ -698,7 +736,6 @@ for s in ['BTC', 'ETH']:
     fig.savefig(os.path.join(folder, f'TimelineForecastMarketState{s}.png'), dpi=200)
     plt.show()
     fig.clf()
-
 
 _style_white()
 fig, ax = plt.subplots(figsize=(10, 4))
